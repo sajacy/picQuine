@@ -21,6 +21,8 @@ def inline(match):
     code = re.sub(r'</script', lambda _: r'<\/script', (source / name).read_text(encoding='utf-8'), flags=re.I)
     return '<script data-source="' + name + '">\n' + code + '\n</script>'
 template = re.sub(r'<script src="([^"]+)"></script>', inline, template)
+license_text = (root / 'LICENSE').read_text(encoding='utf-8')
+template = template.replace('</head>', '<script type="text/plain" id="picquine-license">' + license_text.replace('</script', '<\\/script') + '</script></head>')
 for profile in selected:
     html = template
     extensions = {}

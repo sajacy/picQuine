@@ -2,6 +2,7 @@
   "name": "picquine",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "An offline image editor distributed as one self-contained HTML file.",
   "scripts": {
     "build": "python3 scripts/build-runtime.py",

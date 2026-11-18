@@ -8,4 +8,4 @@ Contains libheif 1.23.5 and its libde265 HEVC decoder.
 libheif sources: https://github.com/strukturag/libheif/tree/v1.23.5
 libde265 sources: https://github.com/strukturag/libde265
 Distributed under the GNU LGPL v3; see libheif.LICENSE.
-Still embeds the bundle and its WASM bytes, compressed, in an offline worker.
+picQuine embeds the bundle and its WASM bytes, compressed, in an offline worker.

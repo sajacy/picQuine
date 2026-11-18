@@ -35,3 +35,7 @@ npm run serve
 - [Architecture](ARCHITECTURE.md)
 - [Project format, extensions and editor bundles](docs/README.md)
 - [HEIC license](src/vendor/libheif.LICENSE) and [third-party notices](src/vendor/libheif.NOTICE)
+
+## License
+
+- Project code: [MIT](LICENSE). Bundled third-party components retain their own licenses; the HEIC decoder is LGPL-3.0.
