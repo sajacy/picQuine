@@ -1,0 +1,19 @@
+{
+  "name": "picquine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An offline image editor distributed as one self-contained HTML file.",
+  "scripts": {
+    "build": "python3 scripts/build-runtime.py",
+    "pretest": "npm run build",
+    "test": "node scripts/test.cjs",
+    "test:browser": "npm run build && node scripts/browser-roundtrip.cjs && node scripts/browser-upgrade.cjs && node scripts/browser-edit-export.cjs",
+    "example": "npm run build && node scripts/example-project.cjs",
+    "benchmark": "node scripts/benchmark.cjs",
+    "serve": "python3 -m http.server 5173 --bind 127.0.0.1",
+    "test:contracts": "python3 scripts/check-contracts.py"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

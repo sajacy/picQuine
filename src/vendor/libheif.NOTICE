@@ -1,0 +1,11 @@
+libheif-js 1.23.5 — self-contained WebAssembly browser bundle
+Upstream: https://github.com/catdad-experiments/libheif-js
+Package: https://registry.npmjs.org/libheif-js/-/libheif-js-1.23.5.tgz
+File: libheif-wasm/libheif-bundle.js (unmodified)
+Bundle SHA-256: 074b2b55ef3de477ba9f794ca381f3f0324c1cba8c91b4af07395f39c22d54cc
+
+Contains libheif 1.23.5 and its libde265 HEVC decoder.
+libheif sources: https://github.com/strukturag/libheif/tree/v1.23.5
+libde265 sources: https://github.com/strukturag/libde265
+Distributed under the GNU LGPL v3; see libheif.LICENSE.
+Still embeds the bundle and its WASM bytes, compressed, in an offline worker.

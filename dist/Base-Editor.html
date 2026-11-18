@@ -1,0 +1,5376 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#171a19" />
+    <title>PicQuine — local image editor</title>
+    <style>:root {
+  color-scheme: light;
+  --bg: #f4f6f4;
+  --panel: #fff;
+  --workspace: #e6ebe7;
+  --field: #f7f9f7;
+  --text: #24312b;
+  --muted: #627068;
+  --line: #d1d9d2;
+  --accent: #24795f;
+  --accent-text: #fff;
+  --selected: #e0eee6;
+  --hover: #eaf0eb;
+  --checker: #e2e6e2;
+  --check-base: #fff;
+  font:
+    12px -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1b211e;
+  --panel: #222a25;
+  --workspace: #131a16;
+  --field: #1b231e;
+  --text: #e0e8e1;
+  --muted: #a4b3a7;
+  --line: #3d4b40;
+  --accent: #5eb598;
+  --accent-text: #10291e;
+  --selected: #324c3d;
+  --hover: #304034;
+  --checker: #626c64;
+  --check-base: #a6afa8;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button {
+  color: inherit;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  padding: 6px 9px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+button:hover {
+  background: var(--hover);
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+.primary:hover {
+  filter: brightness(1.12);
+  background: var(--accent);
+}
+header {
+  height: 46px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 12px;
+  background: var(--panel);
+}
+.brand {
+  text-decoration: none;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -1px;
+}
+.mark {
+  color: var(--accent);
+  font-size: 26px;
+}
+.file-actions {
+  display: flex;
+  gap: 2px;
+}
+.file-actions button {
+  font-size: 11px;
+}
+kbd {
+  font: 10px inherit;
+  color: var(--muted);
+  margin-left: 8px;
+}
+.documentbar {
+  height: 38px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 11px;
+  background: var(--panel);
+}
+#docName {
+  width: 160px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 4px 6px;
+}
+.pill {
+  font-size: 9px;
+  border: 1px solid var(--line);
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: var(--muted);
+}
+.spacer {
+  flex: 1;
+}
+.divider {
+  height: 18px;
+  border-left: 1px solid var(--line);
+}
+select,
+textarea,
+input[type="text"],
+input[type="number"],
+input:not([type]) {
+  background: var(--field);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 6px;
+  width: 100%;
+  min-width: 0;
+}
+.documentbar select {
+  width: 70px;
+  padding: 4px;
+}
+main {
+  height: calc(100vh - 84px);
+  display: flex;
+}
+.tools {
+  width: 50px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding: 10px 5px;
+  gap: 6px;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+}
+.tools button {
+  width: 36px;
+  height: 37px;
+  position: relative;
+  font-size: 23px;
+  padding: 2px;
+}
+.tools button.active,
+#preview[aria-pressed="true"] {
+  background: var(--selected);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.tools small {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  font-size: 8px;
+  color: var(--muted);
+}
+.tool-rule {
+  width: 25px;
+  border-top: 1px solid var(--line);
+  margin: 6px;
+}
+input[type="color"] {
+  background: none;
+  width: 32px;
+  height: 30px;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.tools #help {
+  margin-top: auto;
+  font-size: 17px;
+  color: var(--muted);
+}
+.workspace {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--workspace);
+}
+.contextbar {
+  min-height: 39px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+.contextbar b {
+  font-weight: 600;
+}
+.contextbar #toolHint {
+  color: var(--muted);
+}
+.contextbar input {
+  width: 64px;
+  padding: 4px;
+}
+.contextbar button {
+  padding: 5px 8px;
+}
+#regionControls {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+#regionControls label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+#regionControls input {
+  width: 61px;
+}
+#viewport {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  padding: 30px;
+}
+#stage {
+  position: relative;
+  flex-shrink: 0;
+  background-color: var(--check-base);
+  background-image: conic-gradient(
+    var(--checker) 25%,
+    transparent 0 50%,
+    var(--checker) 0 75%,
+    transparent 0
+  );
+  background-size: 16px 16px;
+  box-shadow: 0 2px 12px #0002;
+  touch-action: none;
+}
+#stage > canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+#overlay {
+  cursor: move;
+}
+#welcome {
+  position: absolute;
+  inset: 0;
+  background: var(--panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 20px;
+  text-align: center;
+}
+h1 {
+  font:
+    500 24px -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  margin: 0 0 20px;
+}
+#welcome p {
+  color: var(--muted);
+  font-size: 11px;
+}
+#welcome .primary {
+  padding: 9px 18px;
+}
+#welcome .formats {
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  margin: 13px 0;
+}
+.text-button {
+  font-size: 11px;
+  color: var(--muted);
+}
+footer {
+  min-height: 29px;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  padding: 5px 12px;
+  gap: 18px;
+  font-size: 10px;
+  color: var(--muted);
+}
+#status {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 50%;
+}
+#coordinates,
+#regionSize {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+aside {
+  width: 250px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  padding: 9px 13px;
+  gap: 4px;
+}
+h2 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0;
+}
+.panel-head h2 {
+  margin-right: auto;
+}
+.panel-head button {
+  padding: 3px 6px;
+  font-size: 19px;
+}
+#layers {
+  height: 180px;
+  min-height: 80px;
+  overflow: auto;
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+.layer {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 7px 6px;
+  margin-bottom: 3px;
+  cursor: pointer;
+}
+.layer.selected {
+  background: var(--selected);
+  border-color: var(--accent);
+}
+.layer:hover {
+  background: var(--hover);
+}
+.thumb {
+  width: 34px;
+  height: 29px;
+  object-fit: contain;
+  background: repeating-conic-gradient(
+      var(--checker) 0% 25%,
+      var(--check-base) 0% 50%
+    )
+    50%/10px 10px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+.layer-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.layer button {
+  padding: 3px;
+  color: var(--muted);
+  font-size: 15px;
+}
+.layer-actions {
+  display: flex;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  gap: 2px;
+}
+.layer-actions button {
+  font-size: 11px;
+  padding: 5px;
+}
+.layer-actions button:first-child {
+  margin-right: auto;
+}
+.properties {
+  padding: 14px;
+}
+.properties h2 {
+  margin-bottom: 14px;
+}
+.properties label {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-bottom: 12px;
+}
+.properties input:not([type="range"]),
+.properties select {
+  margin-top: 5px;
+  font-size: 11px;
+}
+.fields {
+  display: flex;
+  gap: 10px;
+}
+.fields label {
+  width: 50%;
+}
+input[type="range"] {
+  display: block;
+  width: 100%;
+  accent-color: var(--accent);
+  margin: 8px 0 0;
+}
+output {
+  float: right;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.rotation-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.rotation-controls input {
+  flex: 1;
+  min-width: 0;
+}
+.rotation-controls button {
+  border: 1px solid var(--line);
+  margin-top: 5px;
+  color: var(--text);
+}
+dialog {
+  width: 420px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--text);
+  padding: 20px;
+  box-shadow: 0 15px 60px #0004;
+}
+dialog::backdrop {
+  background: #14251d70;
+}
+.dialog-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+.dialog-top h2 {
+  font-size: 17px;
+}
+.dialog-top button {
+  font-size: 22px;
+}
+dialog label {
+  display: block;
+  margin: 13px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+dialog input,
+dialog select,
+dialog textarea {
+  margin-top: 6px;
+}
+dialog p {
+  line-height: 1.6;
+  color: var(--muted);
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 40px;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: var(--accent-text);
+  border-radius: 5px;
+  padding: 11px 16px;
+  display: none;
+  z-index: 10;
+  max-width: 80vw;
+}
+#proofControls {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent);
+}
+#proofFilter {
+  width: 105px;
+}
+.proof-mode #overlay {
+  pointer-events: none;
+  visibility: hidden;
+}
+.proof-mode #canvas {
+  visibility: hidden;
+}
+.proof-mode #welcome {
+  display: none;
+}
+.proof-mode .tools,
+.proof-mode aside {
+  opacity: 0.55;
+}
+.proof-mode #stage {
+  outline: 1px solid var(--accent);
+}
+#proofProgress {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--panel);
+  opacity: 0.9;
+  color: var(--accent);
+  z-index: 2;
+  pointer-events: none;
+}
+.proof-mode #toolLabel {
+  color: var(--accent);
+}
+[hidden] {
+  display: none !important;
+}
+@media (max-width: 1050px) {
+  kbd,
+  #toolHint,
+  #proofControls > span {
+    display: none;
+  }
+  header {
+    gap: 6px;
+  }
+  aside {
+    width: 225px;
+  }
+  .documentbar {
+    gap: 4px;
+  }
+  #docName {
+    width: 125px;
+  }
+  .contextbar {
+    gap: 7px;
+  }
+  #regionControls {
+    gap: 4px;
+  }
+  #regionControls input {
+    width: 53px;
+  }
+}
+@media (max-width: 740px) {
+  header {
+    padding: 0 6px;
+    overflow: auto;
+    flex-shrink: 0;
+  }
+  .brand {
+    font-size: 19px;
+  }
+  .file-actions button,
+  header > button {
+    font-size: 10px;
+    padding: 5px;
+  }
+  aside {
+    width: 185px;
+  }
+  .properties {
+    padding: 10px;
+  }
+  #layers {
+    height: 140px;
+  }
+  .documentbar {
+    overflow: auto;
+    flex-shrink: 0;
+    padding: 0 7px;
+  }
+  #docName {
+    min-width: 90px;
+  }
+  .pill,
+  #docSize {
+    display: none;
+  }
+  .contextbar {
+    padding: 5px 7px;
+  }
+  #regionControls {
+    flex-wrap: wrap;
+  }
+  #regionControls input {
+    width: 51px;
+  }
+  #viewport {
+    padding: 20px;
+  }
+  footer {
+    gap: 9px;
+    padding: 5px 7px;
+  }
+  #status {
+    max-width: 25%;
+  }
+  #layerCount {
+    display: none;
+  }
+  .layer-actions {
+    padding: 4px;
+  }
+  .layer-actions button {
+    font-size: 10px;
+    padding: 4px;
+  }
+}
+
+#shapeControls {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+#shapeControls label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+#shapeControls select {
+  width: 111px;
+  padding: 4px;
+}
+#shapeControls input[type="color"] {
+  width: 27px;
+  height: 25px;
+  padding: 0;
+}
+#shapeControls input[type="number"] {
+  width: 57px;
+}
+.contextbar #regionControls {
+  flex-wrap: wrap;
+}
+#shapeControls input:disabled {
+  opacity: 0.4;
+}
+@media (max-width: 1050px) {
+  #shapeControls {
+    gap: 6px;
+  }
+  .contextbar:has(#shapeControls:not([hidden])) #toolHint {
+    display: none;
+  }
+}
+
+#svgContent {
+  width: 100%;
+  font-family: monospace;
+}
+
+dialog textarea {
+  width: 100%;
+  resize: vertical;
+}
+</style>
+  <script type="application/json" id="picquine-editor-info">{"editor":{"id":"org.picquine.editor","profile":"base-editor","version":"0.1.0","build":"475c84f8af50f72b2d32ad53040ef1b2d5fc381ef2a395e33fa91134aebd4523"},"compatibility":{"projectVersions":[3],"extensions":{}}}</script></head>
+  <body>
+    <header>
+      <a class="brand" href="#" aria-label="PicQuine home"
+        ><span class="mark">▧</span> PicQuine</a
+      >
+      <div class="file-actions">
+        <button id="new">New</button
+        ><button id="open">Open image <kbd>⌘ O</kbd></button
+        ><button id="projectOpen">Open project</button
+        ><button id="saveProject">Save project</button
+        ><button id="loadEditor">Load editor URL</button>
+      </div>
+      <span class="spacer"></span
+      ><button id="theme" aria-pressed="false" title="Switch to dark mode">
+        Dark mode</button
+      ><button id="export" class="primary">Export image ↗</button>
+    </header>
+    <div class="documentbar">
+      <input
+        id="docName"
+        aria-label="Project name"
+        title="Project name (used for saved files)"
+        maxlength="200"
+        value="Untitled"
+      /><span class="pill">RGBA</span><span id="docSize">1200 × 800 px</span
+      ><span class="spacer"></span><button id="undo" title="Undo (⌘Z)">↶</button
+      ><button id="redo" title="Redo (⇧⌘Z)">↷</button
+      ><span class="divider"></span><button id="resize">Resize</button
+      ><button id="preview" aria-pressed="false">Preview</button
+      ><label id="proofControls" hidden
+        ><span>Proof filter</span>
+        <select id="proofFilter" aria-label="Proof resampling filter">
+          <option value="bicubic">Bicubic</option>
+          <option value="lanczos">Lanczos 3</option>
+        </select></label
+      ><button id="fit">Fit canvas</button
+      ><select id="zoom" aria-label="Zoom">
+        <option value="fit">Fit</option>
+        <option value="0.25">25%</option>
+        <option value="0.5">50%</option>
+        <option value="1">100%</option>
+        <option value="2">200%</option>
+      </select>
+    </div>
+    <main>
+      <nav class="tools" aria-label="Editing tools">
+        <button data-tool="move" class="active" title="Move layer (V)">
+          ↖<small>V</small></button
+        ><button data-tool="crop" title="Crop (C)">⌗<small>C</small></button
+        ><button data-tool="brush" title="Brush (B)">╱<small>B</small></button
+        ><button data-tool="erase" title="Eraser (E)">▱<small>E</small></button
+        ><button data-tool="text" title="Add text (T)">T<small>T</small></button
+        ><button data-tool="rect" title="Rectangle (R)">
+          □<small>R</small></button
+        ><button data-tool="ellipse" title="Ellipse (U)">
+          ○<small>U</small>
+        </button>
+        <div class="tool-rule"></div>
+        <input
+          id="color"
+          type="color"
+          value="#287c65"
+          title="Paint color"
+        /><button id="help" title="Help">?</button>
+      </nav>
+      <section class="workspace">
+        <div class="contextbar">
+          <b id="toolLabel">Move</b
+          ><span id="toolHint">Drag to position the selected layer</span
+          ><span class="spacer"></span>
+          <div id="regionControls" hidden>
+            <label
+              >X <input id="regionX" type="number" step="1" value="0" /></label
+            ><label
+              >Y <input id="regionY" type="number" step="1" value="0" /></label
+            ><label
+              >W
+              <input
+                id="regionW"
+                type="number"
+                min="1"
+                step="1"
+                value="100" /></label
+            ><label
+              >H
+              <input
+                id="regionH"
+                type="number"
+                min="1"
+                step="1"
+                value="100" /></label
+            ><button id="addRectangle" class="primary" hidden>
+              Add rectangle
+            </button>
+          </div>
+          <div id="shapeControls" hidden>
+            <label
+              >Mode<select id="shapeMode">
+                <option value="stroke">Stroke only</option>
+                <option value="both" selected>Stroke + fill</option>
+                <option value="fill">Fill only</option>
+              </select></label
+            ><label
+              >Fill<input
+                id="shapeFill"
+                type="color"
+                value="#287c65"
+                aria-label="Shape fill color" /></label
+            ><label
+              >Stroke<input
+                id="shapeStroke"
+                type="color"
+                value="#ff0000"
+                aria-label="Shape stroke color" /></label
+            ><label
+              >Width<input
+                id="shapeStrokeWidth"
+                type="number"
+                min="1"
+                max="4096"
+                step="1"
+                value="4"
+                aria-label="Stroke width in pixels"
+            /></label>
+          </div>
+          <label id="brushLabel" hidden
+            >Size
+            <input id="brushSize" type="number" min="1" max="500" value="24" />
+            px</label
+          ><button id="applyCrop" hidden class="primary">Apply crop</button
+          ><label id="cropLayerLabel" hidden><input id="cropToLayer" type="checkbox" />Crop to new layer</label
+          ><button id="cancelCrop" hidden>Cancel</button>
+        </div>
+        <div id="viewport">
+          <div id="stage">
+            <canvas id="canvas" width="1200" height="800"></canvas
+            ><canvas id="proofCanvas" hidden></canvas>
+            <div id="proofProgress" role="status" hidden>Rendering proof…</div>
+            <canvas id="overlay" width="1200" height="800"></canvas>
+            <div id="welcome">
+              <h1 id="welcomeTitle">Image editor</h1>
+              <button id="welcomeOpen" class="primary">Open image</button>
+              <p class="formats">JPG · PNG · BMP · SVG · WebP · AVIF</p>
+              <button id="demo" class="text-button">Open sample</button>
+            </div>
+          </div>
+        </div>
+        <footer>
+          <span id="status" role="status">Ready</span
+          ><span class="spacer"></span><span id="layerCount">0 layers</span
+          ><span id="coordinates" aria-label="Canvas coordinates">X — Y —</span
+          ><span id="regionSize" aria-label="Selection dimensions"></span>
+        </footer>
+      </section>
+      <aside>
+        <div class="panel-head">
+          <h2>Layers</h2>
+          <button id="addLayer" title="Add transparent layer">＋</button
+          ><button id="importLayer" title="Import image as layer">↥</button>
+        </div>
+        <div id="layers"></div>
+        <div class="layer-actions">
+          <button id="duplicate" title="Duplicate layer">⧉ Duplicate</button
+          ><button id="raise" title="Move layer up">↑</button
+          ><button id="lower" title="Move layer down">↓</button
+          ><button id="delete" title="Delete layer">⌫</button>
+        </div>
+        <section class="properties">
+          <h2>Layer properties</h2>
+          <button id="editLayer" hidden>Edit</button>
+          <div id="properties">
+            <label
+              >Name<input
+                id="layerName"
+                type="text"
+                placeholder="Select a layer" /></label
+            ><label
+              >Opacity <output id="opacityValue">100%</output
+              ><input id="opacity" type="range" min="0" max="100" value="100"
+            /></label>
+            <div class="fields">
+              <label>X<input id="posX" type="number" value="0" /></label
+              ><label>Y<input id="posY" type="number" value="0" /></label>
+            </div>
+            <div class="fields">
+              <label
+                >Width<input
+                  id="layerWidth"
+                  type="number"
+                  min="1"
+                  value="1200" /></label
+              ><label
+                >Height<input
+                  id="layerHeight"
+                  type="number"
+                  min="1"
+                  value="800"
+              /></label>
+            </div>
+            <div class="fields">
+              <label>Size units<select id="layerSizeUnit"><option value="pixels">Pixels</option><option value="percent">Percent of source</option></select></label>
+              <label><input id="layerRatio" type="checkbox" />Lock aspect ratio</label>
+            </div>
+            <label
+              >Rotation <output id="rotationValue">0°</output>
+              <div class="rotation-controls">
+                <button id="rotate90" title="Rotate layer 90 degrees clockwise">
+                  ↻ 90°</button
+                ><input
+                  id="rotation"
+                  type="range"
+                  min="1"
+                  max="360"
+                  step="1"
+                  value="360"
+                  aria-label="Layer rotation in degrees"
+                /></div></label
+            ><label
+              >Blend mode<select id="blend">
+                <option value="source-over">Normal</option>
+                <option value="multiply">Multiply</option>
+                <option value="screen">Screen</option>
+                <option value="overlay">Overlay</option>
+                <option value="darken">Darken</option>
+                <option value="lighten">Lighten</option>
+              </select></label
+            >
+          </div>
+        </section>
+      </aside>
+    </main>
+    <input
+      id="fileInput"
+      type="file"
+      accept=".jpg,.jpeg,.png,.bmp,.svg,.webp,.avif"
+      multiple
+      hidden
+    /><input
+      id="projectInput"
+      type="file"
+      accept=".html,.zip,text/html,application/zip"
+      hidden
+    />
+    <template id="editor-fields"><label>Editor bundle URL<input id="editorURL" type="url" required /></label></template>
+    <template id="save-fields"><label>Editor<select id="saveEditor"><option value="current">Current editor</option></select></label></template>
+    <template id="upgrade-fields"><p>Open the loaded editor in a new window with the current project. Save there to keep the new editor and project.</p></template>
+    <template id="text-fields"
+      ><label
+        >Text<textarea id="textContent" rows="4" maxlength="2000">Something wonderful</textarea></label
+      ><label
+        >Font<select id="textFont">
+          <option value="Georgia">Georgia</option>
+          <option value="Arial">Arial</option>
+          <option value="Helvetica">Helvetica</option>
+          <option value="Verdana">Verdana</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Courier New">Courier New</option>
+          <option value="system-ui">System font</option>
+          <option value="serif">Serif</option>
+          <option value="sans-serif">Sans serif</option>
+          <option value="monospace">Monospace</option>
+        </select></label
+      ><label
+        >Font size (px)<input
+          id="textSize"
+          type="number"
+          value="72"
+          min="1"
+          max="1000"
+          required /></label
+      ><label
+        >Text color<input id="textColor" type="color" value="#287c65" /></label
+    ></template>
+    <template id="svg-fields"><label>SVG markup<textarea id="svgContent" rows="14" spellcheck="false"></textarea></label></template>
+    <template id="new-fields"
+      ><label
+        >Width (px)<input
+          id="newW"
+          type="number"
+          value="1200"
+          min="1"
+          max="16384"
+          required /></label
+      ><label
+        >Height (px)<input
+          id="newH"
+          type="number"
+          value="800"
+          min="1"
+          max="16384"
+          required
+      /></label>
+      <p>
+        Start with a transparent canvas. Your current work remains available in
+        Undo.
+      </p></template
+    >
+    <template id="resize-fields"
+      ><label
+        >Units<select id="resizeUnit">
+          <option value="pixels">Pixels</option>
+          <option value="percent">Percentage</option>
+        </select></label
+      ><label id="resizeWLabel"
+        >Width<input
+          id="resizeW"
+          type="number"
+          value="1200"
+          min="0.01"
+          step="any"
+          required /></label
+      ><label
+        >Height<input
+          id="resizeH"
+          type="number"
+          value="800"
+          min="0.01"
+          step="any"
+          required /></label
+      ><label
+        ><input id="ratio" type="checkbox" checked /> Lock aspect ratio</label
+      >
+      <p>
+        Scales all layers with the canvas. Source pixels are retained.
+      </p></template
+    >
+    <template id="export-fields"
+      ><label
+        >Format<select id="exportFormat">
+          <option value="image/png">PNG — with transparency</option>
+          <option value="image/jpeg">JPEG — flattened background</option>
+          <option value="image/webp">WebP — with transparency</option>
+        </select></label
+      ><label>Resampling<select id="exportResampling"><option value="none">None</option><option value="bicubic">Bicubic (graphics)</option><option value="lanczos">Lanczos (photos)</option></select></label
+      ><label id="qualityLabel" hidden
+        >Quality<input
+          id="exportQuality"
+          type="range"
+          min="10"
+          max="100"
+          value="92" /></label
+      ><label id="bgLabel" hidden
+        >JPEG background <input id="exportBg" type="color" value="#ffffff"
+      /></label>
+      <p>Exports visible layers at full canvas resolution.</p></template
+    >
+    <template id="help-fields"
+      ><p>
+        Open an image to start, or drop one onto the canvas. Import more images
+        with the arrow in the Layers panel.
+      </p>
+      <p>
+        V Move · C Crop · B Brush · E Eraser · T Text · R Rectangle · U
+        Ellipse<br />⌘/Ctrl Z Undo · ⇧⌘/Ctrl Z Redo<br />⌘/Ctrl O Open · ⌘/Ctrl
+        S Save project
+      </p>
+      <p>
+        Preview creates a read-only, full-resolution Bicubic or Lanczos 3 proof.
+        Use 100% zoom to inspect pixels. Export in preview saves that filtered
+        result. Exit preview or Escape returns to editing.
+      </p>
+      <p>
+        Paint and erase on the selected layer. PNG and WebP preserve alpha. Save
+        a .zip project to keep layers editable and retain original input files,
+        including SVG. SVG uses a sanitized raster display cache; external
+        references are removed from that display only. HEIC is decoded locally.
+      </p></template
+    >
+    <dialog id="modal">
+      <form method="dialog">
+        <div class="dialog-top">
+          <h2 id="modalTitle"></h2>
+          <button formnovalidate value="cancel" aria-label="Close">×</button>
+        </div>
+        <div id="modalBody"></div>
+        <div class="dialog-actions">
+          <button formnovalidate value="cancel">Cancel</button
+          ><button id="modalOK" value="ok" class="primary">Apply</button>
+        </div>
+      </form>
+    </dialog>
+    <div id="toast" role="alert"></div>
+    <script data-source="config.js">
+'use strict';
+/** Shared document, archive and history limits; no browser dependencies. */
+const picQuineConfig = Object.freeze({
+  limits: Object.freeze({
+    imageSide: 16384,
+    imagePixels: 40000000,
+    projectPixels: 120000000,
+    layers: 100,
+    archiveBytes: 250000000,
+    assetBytes: 300000000,
+    htmlBytes: 420000000,
+    compositionBytes: 1000000,
+    assetFiles: 200,
+    historyBytes: 256 * 1024 * 1024,
+    historyEntries: 100,
+  }),
+  blendModes: Object.freeze([
+    'source-over',
+    'multiply',
+    'screen',
+    'overlay',
+    'darken',
+    'lighten',
+  ]),
+  imageTypes: Object.freeze([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/avif',
+    'image/svg+xml',
+    'image/bmp',
+    'image/x-ms-bmp',
+    'image/heic',
+    'image/heif',
+  ]),
+});
+
+</script>
+    <script data-source="json.js">
+'use strict';
+// Native JSON parsing, with a small pre-scan so duplicate keys cannot disappear
+// silently.
+const picQuineJSON = {
+  equal(left, right) {
+    if (left === right) {
+      return true;
+    }
+    if (!left || !right || typeof left !== 'object' ||
+        typeof right !== 'object' ||
+        Array.isArray(left) !== Array.isArray(right)) {
+      return false;
+    }
+    const keys = Object.keys(left);
+    return keys.length === Object.keys(right).length &&
+        keys.every(
+            (key) => Object.hasOwn(right, key) &&
+                picQuineJSON.equal(left[key], right[key]));
+  },
+  parse(text) {
+    const stack = [];
+    for (let index = 0; index < text.length; index++) {
+      const char = text[index];
+      const frame = stack.at(-1);
+      if (char === '"') {
+        const start = index;
+        while (++index < text.length) {
+          if (text[index] === '\\') {
+            index++;
+          } else if (text[index] === '"') {
+            break;
+          }
+        }
+        if (frame?.key) {
+          const key = JSON.parse(text.slice(start, index + 1));
+          if (frame.names.has(key)) {
+            throw Error('Duplicate JSON key: ' + key);
+          }
+          frame.names.add(key);
+          frame.key = false;
+        }
+      } else if (char === '{' || char === '[') {
+        if (stack.length >= 100) {
+          throw Error('JSON nesting exceeds 100 levels.');
+        }
+        stack.push(char === '{' ? {names: new Set(), key: true} : {});
+      } else if (char === '}' || char === ']') {
+        stack.pop();
+      } else if (char === ',' && frame?.names) {
+        frame.key = true;
+      } else if (char === ':' && frame?.names) {
+        frame.key = false;
+      }
+    }
+    return JSON.parse(text, (_, value) => {
+      if (typeof value === 'number' && !Number.isFinite(value)) {
+        throw Error('Non-finite JSON number.');
+      }
+      return value;
+    });
+  },
+};
+
+</script>
+    <script data-source="dom.js">
+'use strict';
+// Shared browser helpers; modules call these directly rather than passing them
+// around.
+const $ = (selector) => document.querySelector(selector);
+const makeCanvas = (width, height) =>
+  Object.assign(document.createElement('canvas'), {width, height});
+const uid = () => crypto.randomUUID?.() ||
+    Array
+        .from(
+            crypto.getRandomValues(new Uint8Array(16)),
+            (byte) => byte.toString(16).padStart(2, '0'))
+        .join('');
+
+</script>
+    <script data-source="archive.js">
+'use strict';
+/**
+ * One HTML file in a standard ZIP. Native streams supply raw DEFLATE via gzip.
+ */
+const picQuineArchive = (() => {
+  const utf8 = new TextEncoder();
+  const text = new TextDecoder('utf-8', {fatal: true});
+  const maxHTML = picQuineConfig.limits.htmlBytes;
+  const table = Uint32Array.from({length: 256}, (_, index) => {
+    let crc = index;
+    for (let bit = 0; bit < 8; bit++) {
+      crc = crc & 1 ? 0xedb88320 ^ (crc >>> 1) : crc >>> 1;
+    }
+    return crc >>> 0;
+  });
+  function crc32(bytes) {
+    let crc = 0xffffffff;
+    for (const byte of bytes) {
+      crc = table[(crc ^ byte) & 255] ^ (crc >>> 8);
+    }
+    return (crc ^ 0xffffffff) >>> 0;
+  }
+  const view = (bytes) =>
+    new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  function validName(name) {
+    return typeof name === 'string' && name.length < 1024 &&
+        /\.html$/i.test(name) && !/[\/\\\x00-\x1f]/.test(name);
+  }
+  async function collect(stream, limit) {
+    const reader = stream.getReader();
+    const chunks = [];
+    let size = 0;
+    try {
+      while (true) {
+        const {value, done} = await reader.read();
+        if (done) {
+          break;
+        }
+        size += value.length;
+        if (size > limit) {
+          throw Error('Project exceeds the uncompressed size limit.');
+        }
+        chunks.push(value);
+      }
+    } catch (error) {
+      await reader.cancel().catch(() => {});
+      throw error;
+    } finally {
+      reader.releaseLock();
+    }
+    return new Uint8Array(await new Blob(chunks).arrayBuffer());
+  }
+  async function pack(name, blob) {
+    if (!validName(name)) {
+      throw Error('Invalid project HTML filename.');
+    }
+    if (blob.size > maxHTML) {
+      throw Error('Project exceeds the uncompressed size limit.');
+    }
+    const raw = new Uint8Array(await blob.arrayBuffer());
+    const gzip = await collect(
+        blob.stream().pipeThrough(new CompressionStream('gzip')),
+        maxHTML + 1000000);
+    if (gzip[0] !== 31 || gzip[1] !== 139 || gzip[2] !== 8 || gzip[3] !== 0) {
+      throw Error('Unexpected native gzip header.');
+    }
+    // ZIP needs raw DEFLATE, without the fixed gzip header and trailer.
+    const deflated = gzip.subarray(10, -8);
+    const method = deflated.length < raw.length ? 8 : 0;
+    const payload = method ? deflated : raw;
+    const filename = utf8.encode(name);
+    const crc = crc32(raw);
+    const local = new Uint8Array(30 + filename.length);
+    const header = view(local);
+    // ZIP signatures and fields use little-endian byte order.
+    header.setUint32(0, 0x04034b50, /* littleEndian= */ true);
+    header.setUint16(4, 20, true);
+    header.setUint16(6, 0x800, true);
+    header.setUint16(8, method, true);
+    header.setUint16(12, 33, true); // DOS date: 1980-01-01.
+    header.setUint32(14, crc, true);
+    header.setUint32(18, payload.length, true);
+    header.setUint32(22, raw.length, true);
+    header.setUint16(26, filename.length, true);
+    local.set(filename, 30);
+    const central = new Uint8Array(46 + filename.length);
+    const directory = view(central);
+    directory.setUint32(0, 0x02014b50, true);
+    directory.setUint16(4, 0x314, true); // Unix, ZIP 2.0.
+    // Version, flags, method, date, CRC, sizes and name length share this
+    // layout.
+    central.set(local.subarray(4, 28), 6);
+    directory.setUint32(38, (0o100644 * 65536) >>> 0, true);
+    central.set(filename, 46);
+    const end = new Uint8Array(22);
+    const trailer = view(end);
+    trailer.setUint32(0, 0x06054b50, true);
+    trailer.setUint16(8, 1, true);
+    trailer.setUint16(10, 1, true);
+    trailer.setUint32(12, central.length, true);
+    trailer.setUint32(16, local.length + payload.length, true);
+    const zip =
+        new Blob([local, payload, central, end], {type: 'application/zip'});
+    if (zip.size > picQuineConfig.limits.archiveBytes) {
+      throw Error('Project archive exceeds 250 MB.');
+    }
+    return zip;
+  }
+  async function open(blob) {
+    if (blob.size > picQuineConfig.limits.archiveBytes) {
+      throw Error('Project archive exceeds 250 MB.');
+    }
+    const tailStart = Math.max(0, blob.size - 65557);
+    const tail = new Uint8Array(await blob.slice(tailStart).arrayBuffer());
+    const trailer = view(tail);
+    let end = tail.length - 22;
+    while (end >= 0 &&
+           !(trailer.getUint32(end, true) === 0x06054b50 &&
+             end + 22 + trailer.getUint16(end + 20, true) === tail.length)) {
+      end--;
+    }
+    if (end < 0) {
+      throw Error('Not a supported ZIP archive.');
+    }
+    if (trailer.getUint16(end + 4, true) || trailer.getUint16(end + 6, true) ||
+        trailer.getUint16(end + 8, true) !== 1 ||
+        trailer.getUint16(end + 10, true) !== 1) {
+      throw Error(
+          'Project ZIP must contain exactly one HTML file. Older formats are not supported.');
+    }
+    const size = trailer.getUint32(end + 12, true);
+    const start = trailer.getUint32(end + 16, true);
+    if (size < 46 || size > 46 + 65535 * 3 ||
+        start + size !== tailStart + end) {
+      throw Error('Invalid ZIP directory.');
+    }
+    const central =
+        new Uint8Array(await blob.slice(start, start + size).arrayBuffer());
+    const directory = view(central);
+    const flags = directory.getUint16(8, true);
+    const method = directory.getUint16(10, true);
+    const crc = directory.getUint32(16, true);
+    const packed = directory.getUint32(20, true);
+    const length = directory.getUint32(24, true);
+    const nameLength = directory.getUint16(28, true);
+    const extraLength = directory.getUint16(30, true);
+    const commentLength = directory.getUint16(32, true);
+    if (directory.getUint32(0, true) !== 0x02014b50 || flags & ~0x808 ||
+        ![0, 8].includes(method) ||
+        46 + nameLength + extraLength + commentLength !== size ||
+        directory.getUint16(34, true) || directory.getUint32(42, true)) {
+      throw Error('Unsupported ZIP entry.');
+    }
+    const name = text.decode(central.subarray(46, 46 + nameLength));
+    if (!validName(name)) {
+      throw Error(
+          'Project ZIP must contain exactly one HTML file. Older formats are not supported.');
+    }
+    if (length > maxHTML || packed > picQuineConfig.limits.archiveBytes) {
+      throw Error('Project exceeds the size limit.');
+    }
+    if (!method && packed !== length) {
+      throw Error('Conflicting ZIP entry sizes.');
+    }
+    if (start < 30) {
+      throw Error('Invalid ZIP local header.');
+    }
+    const local = new Uint8Array(await blob.slice(0, 30).arrayBuffer());
+    const header = view(local);
+    const localNameLength = header.getUint16(26, true);
+    const localExtraLength = header.getUint16(28, true);
+    const dataStart = 30 + localNameLength + localExtraLength;
+    if (header.getUint32(0, true) !== 0x04034b50 ||
+        header.getUint16(6, true) !== flags ||
+        header.getUint16(8, true) !== method || dataStart + packed > start ||
+        localNameLength !== nameLength) {
+      throw Error('Conflicting ZIP local header.');
+    }
+    const localName = new Uint8Array(
+        await blob.slice(30, 30 + localNameLength).arrayBuffer());
+    if (text.decode(localName) !== name ||
+        (!(flags & 8) &&
+         (header.getUint32(14, true) !== crc ||
+          header.getUint32(18, true) !== packed ||
+          header.getUint32(22, true) !== length))) {
+      throw Error('Conflicting ZIP entry sizes.');
+    }
+    const stored = blob.slice(dataStart, dataStart + packed);
+    let raw;
+    if (method === 8) {
+      const footer = new Uint8Array(8);
+      const checksum = view(footer);
+      checksum.setUint32(0, crc, true);
+      checksum.setUint32(4, length, true);
+      const gzip = new Blob(
+          [Uint8Array.of(31, 139, 8, 0, 0, 0, 0, 0, 0, 255), stored, footer]);
+      raw = await collect(
+          gzip.stream().pipeThrough(new DecompressionStream('gzip')), length);
+    } else {
+      raw = new Uint8Array(await stored.arrayBuffer());
+    }
+    if (raw.length !== length || crc32(raw) !== crc) {
+      throw Error('ZIP checksum or length mismatch.');
+    }
+    return {name, blob: new Blob([raw], {type: 'text/html'})};
+  }
+  return {pack, open, crc32};
+})();
+
+</script>
+    <script data-source="resample.js">
+/* Explicit separable, scale-aware resampling. Shared by the local worker and
+ * tests. */
+((root) => {
+  'use strict';
+  function kernel(x, method) {
+    x = Math.abs(x);
+    if (method === 'bicubic') {
+      // Keys cubic convolution, a = -0.5 (Catmull–Rom).
+      if (x < 1) {
+        return 1.5 * x * x * x - 2.5 * x * x + 1;
+      }
+      if (x < 2) {
+        return -0.5 * x * x * x + 2.5 * x * x - 4 * x + 2;
+      }
+      return 0;
+    }
+    if (x === 0) {
+      return 1;
+    }
+    if (x >= 3) {
+      return 0;
+    }
+    const p = Math.PI * x;
+    return ((Math.sin(p) / p) * Math.sin(p / 3)) / (p / 3);
+  }
+  function axisWeights(sourceSize, targetSize, offset, count, method) {
+    const stretch = Math.max(1, sourceSize / targetSize);
+    const radius = (method === 'bicubic' ? 2 : 3) * stretch;
+    const table = [];
+    for (let i = 0; i < count; i++) {
+      const center = ((offset + i + 0.5) * sourceSize) / targetSize - 0.5;
+      const weights = new Map();
+      let sum = 0;
+      const first = Math.max(0, Math.ceil(center - radius));
+      const last = Math.min(sourceSize - 1, Math.floor(center + radius));
+      for (let j = first; j <= last; j++) {
+        const w = kernel((j - center) / stretch, method);
+        if (w === 0) {
+          continue;
+        }
+        const index = Math.max(0, Math.min(sourceSize - 1, j));
+        weights.set(index, (weights.get(index) || 0) + w);
+        sum += w;
+      }
+      if (Math.abs(sum) < 1e-12) {
+        table.push([
+          [Math.max(0, Math.min(sourceSize - 1, Math.round(center))), 1],
+        ]);
+        continue;
+      }
+      table.push([...weights].map(([j, w]) => [j, w / sum]));
+    }
+    return table;
+  }
+  function resample({
+    pixels,
+    sw,
+    sh,
+    x,
+    y,
+    w,
+    h,
+    cw,
+    ch,
+    method,
+    rotation = 0,
+  }) {
+    if (!['bicubic', 'lanczos'].includes(method)) {
+      throw Error('Unknown resampling filter.');
+    }
+    if (rotation % 360) {
+      const exact = quarterTurn({
+        pixels,
+        sw,
+        sh,
+        x,
+        y,
+        w,
+        h,
+        cw,
+        ch,
+        rotation,
+      });
+      if (exact) {
+        return exact;
+      }
+      return resampleRotated({
+        pixels,
+        sw,
+        sh,
+        x,
+        y,
+        w,
+        h,
+        cw,
+        ch,
+        method,
+        rotation,
+      });
+    }
+    if (!['bicubic', 'lanczos'].includes(method)) {
+      throw Error('Unknown resampling filter.');
+    }
+    const left = Math.max(0, Math.floor(x));
+    const top = Math.max(0, Math.floor(y));
+    const right = Math.min(cw, Math.ceil(x + w));
+    const bottom = Math.min(ch, Math.ceil(y + h));
+    if (right <= left || bottom <= top) {
+      return {
+        x: left,
+        y: top,
+        width: 0,
+        height: 0,
+        pixels: new Uint8ClampedArray(0),
+      };
+    }
+    const width = right - left;
+    const height = bottom - top;
+    const src = new Uint8ClampedArray(pixels);
+    const out = new Uint8ClampedArray(width * height * 4);
+    if (sw === w && sh === h && Number.isInteger(x) && Number.isInteger(y)) {
+      for (let row = 0; row < height; row++) {
+        const start = ((top + row - y) * sw + left - x) * 4;
+        out.set(src.subarray(start, start + width * 4), row * width * 4);
+      }
+      return {x: left, y: top, width, height, pixels: out};
+    }
+    const xs = axisWeights(sw, w, left - x, width, method);
+    const ys = axisWeights(sh, h, top - y, height, method);
+    const rows = new Map();
+    const rowLimit =
+        Math.max(1, Math.floor((16 * 1024 * 1024) / (width * 4 * 4)));
+    function horizontal(sy) {
+      if (rows.has(sy)) {
+        return rows.get(sy);
+      }
+      const row = new Float32Array(width * 4);
+      for (let dx = 0; dx < width; dx++) {
+        const dst = dx * 4;
+        for (const [sx, weight] of xs[dx]) {
+          const i = (sy * sw + sx) * 4;
+          const alpha = src[i + 3] / 255;
+          row[dst] += src[i] * alpha * weight;
+          row[dst + 1] += src[i + 1] * alpha * weight;
+          row[dst + 2] += src[i + 2] * alpha * weight;
+          row[dst + 3] += alpha * weight;
+        }
+      }
+      if (rows.size >= rowLimit) {
+        rows.delete(rows.keys().next().value);
+      }
+      rows.set(sy, row);
+      return row;
+    }
+    for (let dy = 0; dy < height; dy++) {
+      const accum = new Float32Array(width * 4);
+      for (const [sy, weight] of ys[dy]) {
+        const row = horizontal(sy);
+        for (let i = 0; i < accum.length; i++) {
+          accum[i] += row[i] * weight;
+        }
+      }
+      for (let dx = 0; dx < width; dx++) {
+        const a = dx * 4;
+        const i = (dy * width + dx) * 4;
+        const alpha = Math.max(0, Math.min(1, accum[a + 3]));
+        if (alpha > 1e-7) {
+          out[i] = Math.max(0, Math.min(255, accum[a] / alpha));
+          out[i + 1] = Math.max(0, Math.min(255, accum[a + 1] / alpha));
+          out[i + 2] = Math.max(0, Math.min(255, accum[a + 2] / alpha));
+          const coverageX = Math.max(
+              0,
+              Math.min(left + dx + 1, x + w) - Math.max(left + dx, x),
+          );
+          const coverageY = Math.max(
+              0,
+              Math.min(top + dy + 1, y + h) - Math.max(top + dy, y),
+          );
+          out[i + 3] = alpha * coverageX * coverageY * 255;
+        }
+      }
+    }
+    return {x: left, y: top, width, height, pixels: out};
+  }
+  // Exact right-angle permutations do not require interpolation or floating
+  // buffers.
+  function quarterTurn({pixels, sw, sh, x, y, w, h, cw, ch, rotation}) {
+    const turn = ((rotation % 360) + 360) % 360;
+    if (![90, 180, 270].includes(turn) || sw !== w || sh !== h) {
+      return null;
+    }
+    const dw = turn === 180 ? sw : sh;
+    const dh = turn === 180 ? sh : sw;
+    const bx = x + w / 2 - dw / 2;
+    const by = y + h / 2 - dh / 2;
+    if (!Number.isInteger(bx) || !Number.isInteger(by)) {
+      return null;
+    }
+    const left = Math.max(0, bx);
+    const top = Math.max(0, by);
+    const right = Math.min(cw, bx + dw);
+    const bottom = Math.min(ch, by + dh);
+    const width = Math.max(0, right - left);
+    const height = Math.max(0, bottom - top);
+    const out = new Uint8ClampedArray(width * height * 4);
+    const src = new Uint8ClampedArray(pixels);
+    if (!width || !height) {
+      return {x: left, y: top, width: 0, height: 0, pixels: out};
+    }
+    for (let row = 0; row < height; row++) {
+      for (let col = 0; col < width; col++) {
+        const dx = left + col - bx;
+        const dy = top + row - by;
+        const sx = turn === 90 ? dy : turn === 180 ? sw - 1 - dx : sw - 1 - dy;
+        const sy = turn === 90 ? sh - 1 - dx : turn === 180 ? sh - 1 - dy : dx;
+        const source = (sy * sw + sx) * 4;
+        const target = (row * width + col) * 4;
+        out[target] = src[source];
+        out[target + 1] = src[source + 1];
+        out[target + 2] = src[source + 2];
+        out[target + 3] = src[source + 3];
+      }
+    }
+    return {x: left, y: top, width, height, pixels: out};
+  }
+  // Inverse-map final pixels; filtering a browser-rotated raster loses detail.
+  // Coverage antialiasing handles the transparent geometric edges.
+  function resampleRotated({
+    pixels,
+    sw,
+    sh,
+    x,
+    y,
+    w,
+    h,
+    cw,
+    ch,
+    method,
+    rotation,
+  }) {
+    if (!['bicubic', 'lanczos'].includes(method)) {
+      throw Error('Unknown resampling filter.');
+    }
+    const radians = (rotation * Math.PI) / 180;
+    const snap = (n) => Math.abs(n) < 1e-12 ? 0 :
+        Math.abs(Math.abs(n) - 1) < 1e-12 ? Math.sign(n) :
+                                              n;
+    const c = snap(Math.cos(radians));
+    const s = snap(Math.sin(radians));
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    const corners = [
+      [-w / 2, -h / 2],
+      [w / 2, -h / 2],
+      [w / 2, h / 2],
+      [-w / 2, h / 2],
+    ].map(([u, v]) => [cx + u * c - v * s, cy + u * s + v * c]);
+    const bx = Math.min(...corners.map((p) => p[0]));
+    const by = Math.min(...corners.map((p) => p[1]));
+    const br = Math.max(...corners.map((p) => p[0]));
+    const bb = Math.max(...corners.map((p) => p[1]));
+    const left = Math.max(0, Math.floor(bx));
+    const top = Math.max(0, Math.floor(by));
+    const right = Math.min(cw, Math.ceil(br));
+    const bottom = Math.min(ch, Math.ceil(bb));
+    if (right <= left || bottom <= top) {
+      return {
+        x: left,
+        y: top,
+        width: 0,
+        height: 0,
+        pixels: new Uint8ClampedArray(0),
+      };
+    }
+    const width = right - left;
+    const height = bottom - top;
+    const out = new Uint8ClampedArray(width * height * 4);
+    const src = new Uint8ClampedArray(pixels);
+    const stretchX = Math.max(1, sw / w);
+    const stretchY = Math.max(1, sh / h);
+    const radius = method === 'bicubic' ? 2 : 3;
+    const xIndices = new Int32Array(
+        Math.min(sw, 2 * Math.ceil(radius * stretchX) + 1),
+    );
+    const xValues = new Float64Array(xIndices.length);
+    const yIndices = new Int32Array(
+        Math.min(sh, 2 * Math.ceil(radius * stretchY) + 1),
+    );
+    const yValues = new Float64Array(yIndices.length);
+    function weights(center, size, stretch, indices, values) {
+      let count = 0;
+      let sum = 0;
+      for (let j = Math.max(0, Math.ceil(center - radius * stretch));
+        j <= Math.min(size - 1, Math.floor(center + radius * stretch));
+        j++) {
+        const weight = kernel((j - center) / stretch, method);
+        if (Math.abs(weight) < 1e-12) {
+          continue;
+        }
+        indices[count] = j;
+        values[count++] = weight;
+        sum += weight;
+      }
+      if (Math.abs(sum) < 1e-12) {
+        indices[0] = Math.max(0, Math.min(size - 1, Math.round(center)));
+        values[0] = 1;
+        return 1;
+      }
+      for (let i = 0; i < count; i++) {
+        values[i] /= sum;
+      }
+      return count;
+    }
+    for (let row = 0; row < height; row++) {
+      for (let col = 0; col < width; col++) {
+        const px = left + col;
+        const py = top + row;
+        const dx = px + 0.5 - cx;
+        const dy = py + 0.5 - cy;
+        const u = dx * c + dy * s + w / 2;
+        const v = -dx * s + dy * c + h / 2;
+        let coverage = 0;
+        const extent = (Math.abs(c) + Math.abs(s)) / 2;
+        if (u < -extent || u > w + extent || v < -extent || v > h + extent) {
+          continue;
+        }
+        if (rotation % 90 === 0) {
+          coverage = Math.max(0, Math.min(px + 1, br) - Math.max(px, bx)) *
+              Math.max(0, Math.min(py + 1, bb) - Math.max(py, by));
+        } else if (
+          u >= extent && u <= w - extent && v >= extent && v <= h - extent) {
+          coverage = 1;
+        } else {
+          for (let yy = 0; yy < 4; yy++) {
+            for (let xx = 0; xx < 4; xx++) {
+              const qx = px + (xx + 0.5) / 4 - cx;
+              const qy = py + (yy + 0.5) / 4 - cy;
+              const a = qx * c + qy * s + w / 2;
+              const b = -qx * s + qy * c + h / 2;
+              if (a >= 0 && a < w && b >= 0 && b < h) {
+                coverage += 1 / 16;
+              }
+            }
+          }
+        }
+        if (!coverage) {
+          continue;
+        }
+        const nx = weights(
+            (Math.max(0, Math.min(w, u)) * sw) / w - 0.5,
+            sw,
+            stretchX,
+            xIndices,
+            xValues,
+        );
+        const ny = weights(
+            (Math.max(0, Math.min(h, v)) * sh) / h - 0.5,
+            sh,
+            stretchY,
+            yIndices,
+            yValues,
+        );
+        let red = 0;
+        let green = 0;
+        let blue = 0;
+        let alpha = 0;
+        for (let yi = 0; yi < ny; yi++) {
+          for (let xi = 0; xi < nx; xi++) {
+            const i = (yIndices[yi] * sw + xIndices[xi]) * 4;
+            const weight = xValues[xi] * yValues[yi];
+            const a = src[i + 3] / 255;
+            red += src[i] * a * weight;
+            green += src[i + 1] * a * weight;
+            blue += src[i + 2] * a * weight;
+            alpha += a * weight;
+          }
+        }
+        alpha = Math.max(0, Math.min(1, alpha));
+        if (alpha > 1e-7) {
+          const i = (row * width + col) * 4;
+          out[i] = Math.max(0, Math.min(255, red / alpha));
+          out[i + 1] = Math.max(0, Math.min(255, green / alpha));
+          out[i + 2] = Math.max(0, Math.min(255, blue / alpha));
+          out[i + 3] = alpha * coverage * 255;
+        }
+      }
+    }
+    return {x: left, y: top, width, height, pixels: out};
+  }
+  function handleMessage({data}) {
+    try {
+      const result = resample(data);
+      // Transfer the output buffer instead of cloning proof pixels.
+      self.postMessage({id: data.id, ...result}, [result.pixels.buffer]);
+    } catch (error) {
+      self.postMessage({id: data.id, error: error.message || String(error)});
+    }
+  }
+  function workerSource() {
+    return [
+      kernel.toString(),
+      axisWeights.toString(),
+      quarterTurn.toString(),
+      resampleRotated.toString(),
+      resample.toString(),
+      `self.onmessage = ${handleMessage.toString()};`,
+    ].join('\n');
+  }
+  root.picQuineResample = {
+    kernel,
+    axisWeights,
+    resample,
+    workerSource,
+    resampleRotated,
+    quarterTurn,
+  };
+})(typeof self !== 'undefined' ? self : globalThis);
+
+</script>
+    <script data-source="geometry.js">
+'use strict';
+const picQuineGeometry = (() => {
+  function angle(l) {
+    return (l.rotation || 0) % 360;
+  }
+  function layerCorners(l) {
+    const a = (angle(l) * Math.PI) / 180;
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    const cx = l.x + l.w / 2;
+    const cy = l.y + l.h / 2;
+    return [
+      [-l.w / 2, -l.h / 2],
+      [l.w / 2, -l.h / 2],
+      [l.w / 2, l.h / 2],
+      [-l.w / 2, l.h / 2],
+    ].map(([x, y]) => ({x: cx + x * c - y * s, y: cy + x * s + y * c}));
+  }
+  function layerPoint(l, p) {
+    const a = (-angle(l) * Math.PI) / 180;
+    const dx = p.x - l.x - l.w / 2;
+    const dy = p.y - l.y - l.h / 2;
+    return {
+      x: ((dx * Math.cos(a) - dy * Math.sin(a) + l.w / 2) * l.canvas.width) /
+          l.w,
+      y: ((dx * Math.sin(a) + dy * Math.cos(a) + l.h / 2) * l.canvas.height) /
+          l.h,
+    };
+  }
+  function normalRect(r) {
+    return {
+      x: Math.min(r.x, r.x + r.w),
+      y: Math.min(r.y, r.y + r.h),
+      w: Math.abs(r.w),
+      h: Math.abs(r.h),
+    };
+  }
+  function resizeDimensions(ow, oh, width, height, unit) {
+    return unit === 'percent' ? {
+      w: Math.round((ow * width) / 100),
+      h: Math.round((oh * height) / 100),
+    } :
+                                {w: Math.round(width), h: Math.round(height)};
+  }
+  return {angle, layerCorners, layerPoint, normalRect, resizeDimensions};
+})();
+
+</script>
+    <script data-source="document.js">
+'use strict';
+const picQuineDocument = (() => {
+  // One filename stem for the ZIP, its HTML entry, and flattened exports.
+  function fileStem(value) {
+    let name = String(value ?? '')
+        .trim()
+        .replace(/[\\/:*?"<>|\x00-\x1f\x7f]/g, '-')
+        .replace(/[. ]+$/g, '');
+    if (/^(con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])$/i.test(
+        name.split('.')[0].trimEnd())) {
+      name = '_' + name;
+    }
+    const encoder = new TextEncoder();
+    let stem = '';
+    let bytes = 0;
+    for (const char of name) {
+      bytes += encoder.encode(char).length;
+      if (bytes > 240 || stem.length + char.length > 200) {
+        break;
+      }
+      stem += char;
+    }
+    return stem.replace(/[. ]+$/g, '') || 'Untitled';
+  }
+  const validID = (id) =>
+    typeof id === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(id);
+
+  function dimensions(w, h) {
+    return (
+      Number.isInteger(w) && Number.isInteger(h) && w > 0 && h > 0 &&
+        w <= picQuineConfig.limits.imageSide &&
+        h <= picQuineConfig.limits.imageSide &&
+        w * h <= picQuineConfig.limits.imagePixels);
+  }
+  function makeTextSource(content, fontFamily, fontSize, color, x, y) {
+    return {content, runs: [{content, fontFamily, fontSize, color, x, y}]};
+  }
+  function validateTextSource(text) {
+    if (!text || typeof text.content !== 'string' ||
+        text.content.length > 2000 || !Array.isArray(text.runs) ||
+        text.runs.length < 1 || text.runs.length > 20) {
+      throw Error('Invalid original text metadata.');
+    }
+    const runs = text.runs.map((r) => {
+      if (!r || typeof r.content !== 'string' || r.content.length > 2000 ||
+          typeof r.fontFamily !== 'string' || r.fontFamily.length > 100 ||
+          !Number.isFinite(r.fontSize) || r.fontSize < 1 || r.fontSize > 1000 ||
+          !/^#[0-9a-f]{6}$/i.test(r.color) || !Number.isFinite(r.x) ||
+          !Number.isFinite(r.y) || Math.abs(r.x) > 100000 ||
+          Math.abs(r.y) > 100000) {
+        throw Error('Invalid original text styling.');
+      }
+      return {
+        content: r.content,
+        fontFamily: r.fontFamily,
+        fontSize: r.fontSize,
+        color: r.color,
+        x: r.x,
+        y: r.y,
+      };
+    });
+    return {content: text.content, runs};
+  }
+  function validateProject(d) {
+    if (!d || typeof d.name !== 'string' || d.name.length > 200 ||
+        !dimensions(d.w, d.h) || !Array.isArray(d.layers) ||
+        d.layers.length > picQuineConfig.limits.layers) {
+      throw Error('Invalid PicQuine project.');
+    }
+    const ids = new Set();
+    for (const l of d.layers) {
+      if (!l ||
+          !['x', 'y', 'w', 'h', 'opacity'].every(
+              (k) => Number.isFinite(l[k])) ||
+          l.w <= 0 || l.h <= 0 || l.w > 100000 || l.h > 100000 ||
+          Math.abs(l.x) > 1e7 || Math.abs(l.y) > 1e7 || !validID(l.id) ||
+          typeof l.name !== 'string' || typeof l.visible !== 'boolean' ||
+          l.opacity < 0 || l.opacity > 1 ||
+          !picQuineConfig.blendModes.includes(l.blend) || ids.has(l.id)) {
+        throw Error('Invalid layer data.');
+      }
+      if (!Number.isInteger(l.rotation) || l.rotation < 0 || l.rotation > 359) {
+        throw Error('Invalid layer rotation.');
+      }
+      if (l.text) {
+        validateTextSource(l.text);
+      }
+      ids.add(l.id);
+    }
+    if (d.selected !== null && !ids.has(d.selected)) {
+      throw Error('Invalid selected layer.');
+    }
+  }
+  function layerSettings(l) {
+    const blends = picQuineConfig.blendModes;
+    return {
+      id: l.id,
+      name: l.name,
+      x: l.x,
+      y: l.y,
+      w: l.w,
+      h: l.h,
+      opacity: Math.min(1, Math.max(0, l.opacity)),
+      visible: !!l.visible,
+      blend: blends.includes(l.blend) ? l.blend : 'source-over',
+      rotation: (l.rotation || 0) % 360,
+      ...(l.text ? {text: validateTextSource(l.text)} : {}),
+    };
+  }
+  return {
+    fileStem,
+    validID,
+    dimensions,
+    makeTextSource,
+    validateTextSource,
+    validateProject,
+    layerSettings,
+  };
+})();
+
+</script>
+    <script data-source="images.js">
+'use strict';
+const picQuineImages = (() => {
+  let decoder;
+  let sequence = 0;
+  const requests = new Map();
+  const {dimensions} = picQuineDocument;
+  function loadDecoder() {
+    if (decoder) {
+      return decoder;
+    }
+    // Share startup across imports; a failed worker clears the cached promise.
+    decoder = (async () => {
+      if (typeof globalThis.picQuineHEICSource !== 'string') {
+        throw Error('The embedded HEIC decoder is missing.');
+      }
+      const raw = atob(globalThis.picQuineHEICSource);
+      const chunks = [];
+      for (let offset = 0; offset < raw.length; offset += 65536) {
+        chunks.push(Uint8Array.from(
+            raw.slice(offset, offset + 65536),
+            (char) => char.charCodeAt(0)));
+      }
+      const stream = new Blob(chunks).stream().pipeThrough(
+          new DecompressionStream('gzip'));
+      const url = URL.createObjectURL(new Blob(
+          [await new Response(stream).blob()],
+          {type: 'application/javascript'}));
+      let worker;
+      try {
+        worker = new Worker(url);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+      return new Promise((resolve, reject) => {
+        const fail = (error) => {
+          worker.terminate();
+          decoder = null;
+          for (const request of requests.values()) {
+            request.reject(error);
+          }
+          requests.clear();
+          reject(error);
+        };
+        worker.onmessage = ({data}) => {
+          if (data.ready) {
+            return resolve(worker);
+          }
+          if (data.id === undefined) {
+            return fail(
+                Error(data.error || 'HEIC decoder could not start.'));
+          }
+          const request = requests.get(data.id);
+          if (!request) {
+            return;
+          }
+          requests.delete(data.id);
+          if (data.error) {
+            request.reject(Error(data.error));
+          } else {
+            request.resolve(data);
+          }
+        };
+        worker.onerror = () =>
+          fail(Error('The local HEIC decoder failed.'));
+      });
+    })().catch((error) => {
+      decoder = null;
+      throw error;
+    });
+    return decoder;
+  }
+  async function decodeHEIC(file) {
+    const worker = await loadDecoder();
+    const buffer = await file.arrayBuffer();
+    const id = ++sequence;
+    const result = await new Promise((resolve, reject) => {
+      requests.set(id, {resolve, reject});
+      try {
+        worker.postMessage({id, buffer}, [buffer]);
+      } catch (error) {
+        requests.delete(id);
+        reject(error);
+      }
+    });
+    const pixels = makeCanvas(result.width, result.height);
+    pixels.getContext('2d').putImageData(
+        new ImageData(
+            new Uint8ClampedArray(result.pixels), result.width, result.height),
+        0, 0);
+    return pixels;
+  }
+  async function imageFromBlob(blob) {
+    const url = URL.createObjectURL(blob);
+    try {
+      return await new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(Error('This file could not be decoded.'));
+        image.src = url;
+      });
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+  async function decode(file) {
+    let blob = file;
+    if (/\.hei[cf]$/i.test(file.name) || /heic|heif/.test(file.type)) {
+      status('Decoding HEIC locally…');
+      return decodeHEIC(file);
+    }
+    if (/\.svg$/i.test(file.name) || file.type === 'image/svg+xml') {
+      const doc = new DOMParser().parseFromString(
+          await file.text(),
+          'image/svg+xml',
+      );
+      if (doc.querySelector('parsererror') ||
+          doc.documentElement.localName !== 'svg') {
+        throw Error('Invalid SVG file.');
+      }
+      doc.querySelectorAll(
+          'script,foreignObject,style,animate,animateTransform,set',
+      )
+          .forEach((n) => n.remove());
+      for (const n of [doc.documentElement, ...doc.querySelectorAll('*')]) {
+        for (const a of [...n.attributes]) {
+          if (/^on/i.test(a.name) || /url\s*\(/i.test(a.value) ||
+              (/(?:href|src)$/i.test(a.name) && !a.value.startsWith('#'))) {
+            n.removeAttribute(a.name);
+          }
+        }
+      }
+      const root = doc.documentElement;
+      const v =
+          root.getAttribute('viewBox')?.trim().split(/[\s,]+/).map(Number);
+      if (!root.getAttribute('width')) {
+        root.setAttribute('width', v?.[2] || 1200);
+      }
+      if (!root.getAttribute('height')) {
+        root.setAttribute('height', v?.[3] || 800);
+      }
+      blob = new Blob([new XMLSerializer().serializeToString(doc)], {
+        type: 'image/svg+xml',
+      });
+    }
+    const image = await imageFromBlob(blob);
+    if (!dimensions(image.naturalWidth, image.naturalHeight)) {
+      throw Error('Image exceeds the 40 megapixel or 16,384 px limit.');
+    }
+    const pixels = makeCanvas(image.naturalWidth, image.naturalHeight);
+    pixels.getContext('2d').drawImage(image, 0, 0);
+    return pixels;
+  }
+  function imageMime(name) {
+    const ext = name.split('.').pop().toLowerCase();
+    return (
+      {
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        png: 'image/png',
+        svg: 'image/svg+xml',
+        heic: 'image/heic',
+        heif: 'image/heif',
+        bmp: 'image/bmp',
+        webp: 'image/webp',
+        avif: 'image/avif',
+      }[ext] ||
+        'application/octet-stream');
+  }
+  function canvasPNG(pixels) {
+    return new Promise(
+        (resolve, reject) => pixels.toBlob(
+            (blob) => blob ? resolve(blob) :
+                             reject(Error('Could not encode layer PNG.')),
+            'image/png',
+        ),
+    );
+  }
+  return {loadDecoder, decode, imageMime, canvasPNG};
+})();
+
+</script>
+    <script data-source="shapes.js">
+'use strict';
+const picQuineShapes = (() => {
+  function drawShape(c, r, style, kind) {
+    const path = (inset) => {
+      c.beginPath();
+      if (kind === 'ellipse') {
+        c.ellipse(
+            r.x + r.w / 2,
+            r.y + r.h / 2,
+            Math.max(0, r.w / 2 - inset),
+            Math.max(0, r.h / 2 - inset),
+            0,
+            0,
+            Math.PI * 2,
+        );
+      } else {
+        c.rect(
+            r.x + inset,
+            r.y + inset,
+            Math.max(0, r.w - 2 * inset),
+            Math.max(0, r.h - 2 * inset),
+        );
+      }
+    };
+    c.save();
+    if (style.mode !== 'stroke') {
+      path(0);
+      c.fillStyle = style.fill;
+      c.fill();
+    }
+    if (style.mode !== 'fill') {
+      const width = Math.min(style.strokeWidth, r.w, r.h);
+      // Canvas centers strokes on the path; inset to keep entered bounds exact.
+      path(width / 2);
+      c.strokeStyle = style.stroke;
+      c.lineWidth = width;
+      c.lineJoin = 'miter';
+      c.setLineDash([]);
+      c.stroke();
+    }
+    c.restore();
+  }
+  return {drawShape};
+})();
+
+</script>
+    <script data-source="renderer.js">
+'use strict';
+const picQuineRenderer = (() => {
+  const {angle} = picQuineGeometry;
+  function prepare(target, width, height) {
+    if (target.width !== width) {
+      target.width = width;
+    }
+    if (target.height !== height) {
+      target.height = height;
+    }
+    const context = target.getContext('2d');
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.globalAlpha = 1;
+    context.globalCompositeOperation = 'source-over';
+    context.setLineDash([]);
+    context.clearRect(0, 0, width, height);
+    return context;
+  }
+  function scheduler(requestFrame, paint) {
+    let pending = false;
+    let full = false;
+    return function request(composition = true) {
+      // Overlay requests must not downgrade an already queued full draw.
+      full ||= composition;
+      if (pending) {
+        return;
+      }
+      pending = true;
+      requestFrame(() => {
+        const composite = full;
+        pending = false;
+        full = false;
+        paint(composite);
+      });
+    };
+  }
+  function composite(target, state, background) {
+    const context = prepare(target, state.w, state.h);
+    if (background) {
+      context.fillStyle = background;
+      context.fillRect(0, 0, state.w, state.h);
+    }
+    for (const layer of state.layers) {
+      if (!layer.visible) {
+        continue;
+      }
+      context.globalAlpha = layer.opacity;
+      context.globalCompositeOperation = layer.blend;
+      drawLayer(context, layer);
+    }
+    context.globalAlpha = 1;
+    context.globalCompositeOperation = 'source-over';
+    return target;
+  }
+  function drawLayer(context, layer) {
+    if (!angle(layer)) {
+      context.drawImage(layer.canvas, layer.x, layer.y, layer.w, layer.h);
+      return;
+    }
+    context.save();
+    context.translate(layer.x + layer.w / 2, layer.y + layer.h / 2);
+    context.rotate((angle(layer) * Math.PI) / 180);
+    context.drawImage(
+        layer.canvas, -layer.w / 2, -layer.h / 2, layer.w, layer.h);
+    context.restore();
+  }
+  return {composite, drawLayer, prepare, scheduler};
+})();
+
+</script>
+    <script data-source="project.js">
+'use strict';
+/**
+ * Immutable asset records and retained raw metadata keep unfamiliar fork data
+ * intact.
+ */
+const picQuineProject = (() => {
+  const {validID, validateProject, layerSettings, validateTextSource} =
+      picQuineDocument;
+  const originals = new WeakMap();
+  const rasters = new WeakMap();
+  function extensions(node) {
+    const map = node.extensions;
+    if (map === undefined) {
+      return [];
+    }
+    if (!map || typeof map !== 'object' || Array.isArray(map)) {
+      throw Error('Invalid extensions.');
+    }
+    return Object.entries(map).flatMap(([name, extension]) => {
+      if (!/^[a-z][a-z0-9]*(\.[a-z][a-z0-9-]*)+$/.test(name) || !extension ||
+          !Number.isInteger(extension.version) || extension.version < 1 ||
+          typeof extension.required !== 'boolean' ||
+          !Array.isArray(extension.assetRefs) ||
+          !extension.assetRefs.every(validID) ||
+          new Set(extension.assetRefs).size !== extension.assetRefs.length ||
+          !extension.data || typeof extension.data !== 'object' ||
+          Array.isArray(extension.data)) {
+        throw Error('Invalid extension: ' + name);
+      }
+      if (name === 'org.picquine.heic' && extension.version === 1 &&
+          (extension.data.imageIndex !== 0 || extension.assetRefs.length)) {
+        throw Error('Invalid HEIC extension.');
+      }
+      return extension.assetRefs;
+    });
+  }
+  function reachable(project) {
+    const queue = extensions(project);
+    for (const layer of project.composition.layers) {
+      queue.push(
+          layer.content, ...(layer.original ? [layer.original] : []),
+          ...extensions(layer));
+    }
+    // Follow extension references too, including cyclic fork-owned assets.
+    const visited = new Set();
+    while (queue.length) {
+      const id = queue.pop();
+      if (!validID(id) || !Object.hasOwn(project.assets, id)) {
+        throw Error('Missing project asset: ' + id);
+      }
+      if (visited.has(id)) {
+        continue;
+      }
+      visited.add(id);
+      queue.push(...extensions(project.assets[id]));
+    }
+    return visited;
+  }
+  function validate(project) {
+    if (!project || project.format !== 'picquine-project' ||
+        project.version !== 3 || !project.assets ||
+        typeof project.assets !== 'object' || Array.isArray(project.assets)) {
+      throw Error('Invalid PicQuine project v3.');
+    }
+    validateProject(project.composition);
+    if ([project, ...project.composition.layers].some(
+        (node) => node.extensions?.['org.picquine.heic']?.version === 1)) {
+      throw Error('HEIC v1 extensions belong on assets.');
+    }
+    if (project.composition.layers.some(
+        (layer) => layer.text?.extensions !== undefined ||
+                layer.text?.runs.some((run) => run.extensions !== undefined))) {
+      throw Error('Unsupported extension scope.');
+    }
+    if (project.composition.extensions !== undefined) {
+      throw Error('Extensions belong at project, layer or asset scope.');
+    }
+    if (new Blob([JSON.stringify(project.composition)]).size >
+        picQuineConfig.limits.compositionBytes) {
+      throw Error('Composition metadata exceeds 1 MB.');
+    }
+    const entries = Object.entries(project.assets);
+    if (entries.length > picQuineConfig.limits.assetFiles) {
+      throw Error('Project exceeds the 200 asset file limit.');
+    }
+    let bytes = 0;
+    for (const [id, file] of entries) {
+      if (!validID(id) || !file || typeof file.name !== 'string' ||
+          !file.name || typeof file.type !== 'string' ||
+          !/^[A-Za-z0-9!#$&^_.+-]+\/[A-Za-z0-9!#$&^_.+-]+$/.test(file.type) ||
+          typeof file.base64 !== 'string') {
+        throw Error('Invalid asset record.');
+      }
+      bytes += Math.floor(file.base64.length * 3 / 4) -
+          (file.base64.endsWith('==') ? 2 :
+               file.base64.endsWith('=') ? 1 :
+                                           0);
+      if (bytes > picQuineConfig.limits.assetBytes) {
+        throw Error('Project exceeds the asset size limit.');
+      }
+      extensions(file);
+      if (/^image\/hei[cf]$/i.test(file.type)) {
+        const heic = file.extensions?.['org.picquine.heic'];
+        if (!heic ||
+            project.composition.layers.some((layer) => layer.content === id) &&
+                !heic.required) {
+          throw Error('HEIC content requires its extension.');
+        }
+      }
+    }
+    for (const layer of project.composition.layers) {
+      if (!validID(layer.content) ||
+          !(layer.original === null || validID(layer.original))) {
+        throw Error('Invalid asset reference.');
+      }
+    }
+    if (reachable(project).size !== entries.length) {
+      throw Error('Unreferenced project asset.');
+    }
+    return project;
+  }
+  async function buildData(document) {
+    // Unknown required data must survive upgrade-only saves untouched.
+    if (document.readOnly) {
+      return document.project;
+    }
+    validateProject(document);
+    if (document.layers.reduce(
+        (sum, layer) => sum + layer.canvas.width * layer.canvas.height, 0) >
+        picQuineConfig.limits.projectPixels) {
+      throw Error('Project exceeds the pixel memory limit.');
+    }
+    const result = {
+      ...document.project,
+      format: 'picquine-project',
+      version: 3,
+      composition: {
+        ...document.project?.composition,
+        name: document.name,
+        w: document.w,
+        h: document.h,
+        selected: document.selected,
+        layers: [],
+      },
+      assets: {...document.project?.assets},
+    };
+    async function originalAsset(original) {
+      let record = originals.get(original.blob);
+      if (!record) {
+        record = {
+          id: original.id || uid(),
+          file: original.record || {
+            name: original.name,
+            type: original.type || picQuineImages.imageMime(original.name),
+            base64: await picQuineStandalone.base64(original.blob),
+          },
+        };
+        originals.set(original.blob, record);
+      }
+      result.assets[record.id] = record.file;
+      return record.id;
+    }
+    for (const layer of document.layers) {
+      const original =
+          layer.original ? await originalAsset(layer.original) : null;
+      let content = original;
+      if (!original || layer.pixelsEdited) {
+        let record = rasters.get(layer.canvas);
+        if (!record) {
+          record = {
+            id: uid(),
+            file: {
+              name: layer.name + '.png',
+              type: 'image/png',
+              base64: await picQuineStandalone.base64(
+                  await assets.png(layer.canvas)),
+            },
+          };
+          rasters.set(layer.canvas, record);
+        }
+        content = record.id;
+        result.assets[content] = record.file;
+      }
+      result.composition.layers.push({
+        ...layer.record,
+        id: layer.id,
+        name: layer.name,
+        content,
+        original,
+        x: layer.x,
+        y: layer.y,
+        w: layer.w,
+        h: layer.h,
+        rotation: picQuineGeometry.angle(layer),
+        opacity: layer.opacity,
+        visible: layer.visible,
+        blend: layer.blend,
+        ...(layer.text ? {
+          text: {
+            ...layer.record?.text,
+            ...validateTextSource(layer.text),
+            runs: layer.text.runs.map(
+                (run, index) => ({...layer.record?.text?.runs[index], ...run})),
+          },
+        } :
+                         {}),
+      });
+    }
+    const used = reachable(result);
+    for (const id of Object.keys(result.assets)) {
+      if (!used.has(id)) {
+        delete result.assets[id];
+        continue;
+      }
+      const file = result.assets[id];
+      if (/^image\/hei[cf]$/i.test(file.type) &&
+          (!file.extensions?.['org.picquine.heic'] ||
+           file.extensions['org.picquine.heic'].version === 1)) {
+        result.assets[id] = {
+          ...file,
+          extensions: {
+            ...file.extensions,
+            'org.picquine.heic': {
+              ...file.extensions?.['org.picquine.heic'],
+              version: 1,
+              required: result.composition.layers.some(
+                  (layer) => layer.content === id),
+              assetRefs: [],
+              data: {
+                ...file.extensions?.['org.picquine.heic']?.data,
+                imageIndex: 0,
+              },
+            },
+          },
+        };
+      }
+    }
+    return validate(result);
+  }
+  async function restore(project) {
+    validate(project);
+    const files = new Map();
+    for (const [id, record] of Object.entries(project.assets)) {
+      const blob = new File(
+          [picQuineStandalone.fromBase64(record.base64)], record.name,
+          {type: record.type});
+      const original = {id, record, blob, name: record.name, type: record.type};
+      files.set(id, original);
+      originals.set(blob, {id, file: record});
+    }
+    const missing = picQuineRuntime.compatible(project);
+    const readOnly = missing.length > 0;
+    const layers = [];
+    let pixels = 0;
+    for (const record of project.composition.layers) {
+      const content = files.get(record.content);
+      const original = record.original ? files.get(record.original) : null;
+      if (!readOnly &&
+          !picQuineConfig.imageTypes.includes(content.type.toLowerCase())) {
+        throw Error('Unsupported content type: ' + content.type);
+      }
+      // Placeholders retain metadata without decoding unsupported content.
+      const canvas =
+          readOnly ? makeCanvas(1, 1) : await assets.decode(content.blob);
+      if ((pixels += canvas.width * canvas.height) >
+          picQuineConfig.limits.projectPixels) {
+        throw Error('Project exceeds the pixel memory limit.');
+      }
+      // Reuse saved PNG bytes until a later edit changes this canvas.
+      rasters.set(
+          canvas, {id: record.content, file: project.assets[record.content]});
+      layers.push({
+        ...layerSettings(record),
+        record,
+        canvas,
+        original,
+        pixelsEdited: record.content !== record.original,
+      });
+    }
+    return {...project.composition, project, layers, readOnly, missing};
+  }
+  async function readProject(file) {
+    const signature = new Uint8Array(await file.slice(0, 2).arrayBuffer());
+    if (signature[0] === 80 && signature[1] === 75) {
+      file = (await picQuineArchive.open(file)).blob;
+    }
+    return restore(
+        picQuineStandalone.extract(await picQuineStandalone.readHTML(file)));
+  }
+  const buildProject = async (document, choice = 'current') =>
+    picQuineStandalone.encode(await buildData(document), choice);
+  function protects(layer, project) {
+    return [
+      layer.record,
+      layer.original?.record,
+      project?.assets?.[layer.record?.content],
+    ]
+        .some(
+            (node) => Object.entries(node?.extensions || {})
+                .some(
+                    ([name, extension]) =>
+                      !picQuineRuntime.info.compatibility
+                          .extensions[name]
+                          ?.includes(extension.version)));
+  }
+  return {
+    validate,
+    reachable,
+    buildData,
+    buildProject,
+    restore,
+    readProject,
+    protects,
+  };
+})();
+
+</script>
+    <script data-source="history.js">
+'use strict';
+/**
+ * Document transactions. Source canvases and blobs are immutable between
+ * edits.
+ */
+const picQuineHistory = (() => {
+  function clone(document) {
+    return {
+      ...document,
+      layers: document.layers.map((layer) => ({...layer})),
+    };
+  }
+  function create(
+      initial,
+      {
+        canEdit = () => true,
+        onChange = () => {},
+        maxBytes = picQuineConfig.limits.historyBytes,
+        maxEntries = picQuineConfig.limits.historyEntries,
+      } = {},
+  ) {
+    let document = initial;
+    let revision = 0;
+    let sequence = 0;
+    let savedRevision = 0;
+    let pending = null;
+    const past = [];
+    const future = [];
+    function snapshot() {
+      return {document: clone(document), revision};
+    }
+    function resources(doc, set) {
+      for (const layer of doc.layers) {
+        if (layer.canvas) {
+          set.set(layer.canvas, layer.canvas.width * layer.canvas.height * 4);
+        }
+        if (layer.original?.blob) {
+          set.set(layer.original.blob, layer.original.blob.size);
+        }
+      }
+    }
+    function retainedBytes() {
+      const live = new Map();
+      const retained = new Map();
+      // History pays only for resources not already owned by the live document.
+      resources(document, live);
+      for (const entry of [...past, ...future]) {
+        resources(entry.document, retained);
+      }
+      let bytes = 0;
+      for (const [resource, size] of retained) {
+        if (!live.has(resource)) {
+          bytes += size;
+        }
+      }
+      return bytes;
+    }
+    function trim(reserve = 0) {
+      while (past.length + future.length > maxEntries ||
+             retainedBytes() + reserve > maxBytes) {
+        if (past.length) {
+          past.shift();
+        } else if (future.length) {
+          future.shift();
+        } else {
+          break;
+        }
+      }
+    }
+    function changed(before, after) {
+      if (before.w !== after.w || before.h !== after.h ||
+          before.name !== after.name ||
+          before.layers.length !== after.layers.length) {
+        return true;
+      }
+      return before.layers.some((layer, i) => {
+        const other = after.layers[i];
+        return (
+          Object.keys(layer).some((key) => layer[key] !== other[key]) ||
+            Object.keys(other).some((key) => layer[key] !== other[key]));
+      });
+    }
+    function commit() {
+      if (!pending) {
+        return false;
+      }
+      const entry = pending;
+      pending = null;
+      if (!changed(entry.document, document)) {
+        onChange();
+        return false;
+      }
+      past.push(entry);
+      future.length = 0;
+      revision = ++sequence;
+      trim();
+      onChange();
+      return true;
+    }
+    function begin(label = 'Edit', token) {
+      if (!canEdit(token)) {
+        return false;
+      }
+      if (!pending) {
+        pending = {...snapshot(), label};
+      }
+      return true;
+    }
+    function cancel() {
+      if (!pending) {
+        return;
+      }
+      document = pending.document;
+      revision = pending.revision;
+      pending = null;
+      onChange();
+    }
+    function transact(label, mutation, token) {
+      if (!canEdit(token)) {
+        return false;
+      }
+      commit();
+      begin(label, token);
+      try {
+        mutation(document);
+        return commit();
+      } catch (error) {
+        cancel();
+        throw error;
+      }
+    }
+    function undo() {
+      if (!canEdit()) {
+        return false;
+      }
+      commit();
+      if (!past.length) {
+        return false;
+      }
+      future.push(snapshot());
+      const previous = past.pop();
+      document = previous.document;
+      revision = previous.revision;
+      trim();
+      onChange();
+      return true;
+    }
+    function redo() {
+      if (!canEdit()) {
+        return false;
+      }
+      commit();
+      if (!future.length) {
+        return false;
+      }
+      past.push(snapshot());
+      const next = future.pop();
+      document = next.document;
+      revision = next.revision;
+      trim();
+      onChange();
+      return true;
+    }
+    return {
+      get document() {
+        return document;
+      },
+      set document(next) {
+        if (!pending) {
+          throw Error('Replace documents inside a transaction.');
+        }
+        document = next;
+      },
+      get past() {
+        return past;
+      },
+      get future() {
+        return future;
+      },
+      get revision() {
+        return revision;
+      },
+      get dirty() {
+        return (
+          revision !== savedRevision ||
+            (!!pending && changed(pending.document, document)));
+      },
+      get active() {
+        return !!pending;
+      },
+      get stats() {
+        return {
+          retainedBytes: retainedBytes(),
+          maxBytes,
+          entries: past.length + future.length,
+        };
+      },
+      snapshot: () => clone(document),
+      begin,
+      commit,
+      cancel,
+      transact,
+      undo,
+      redo,
+      markSaved(at = revision) {
+        savedRevision = at;
+        onChange();
+      },
+      reservePixelEdit(canvas) {
+        trim(canvas.width * canvas.height * 4);
+      },
+    };
+  }
+  return {create, clone};
+})();
+
+</script>
+    <script data-source="operations.js">
+'use strict';
+/** Single owner for asynchronous I/O and read-only proof mode. */
+const picQuineOperations = {
+  create(onChange = () => {}) {
+    let owner = null;
+    return {
+      get state() {
+        return owner?.name || 'idle';
+      },
+      get busy() {
+        return !!owner && owner.name !== 'proof';
+      },
+      canEdit(token) {
+        return !owner ||
+            (token === owner && owner.name !== 'proof' && !owner.previous);
+      },
+      acquire(name) {
+        // Export temporarily owns a completed proof without exiting preview.
+        if (owner && !(owner.name === 'proof' && name === 'export')) {
+          return null;
+        }
+        owner = Object.freeze({name, previous: owner});
+        onChange();
+        return owner;
+      },
+      release(token) {
+        if (owner && owner === token) {
+          owner = owner.previous;
+          onChange();
+        }
+      },
+    };
+  },
+};
+
+</script>
+    <script data-source="assets.js">
+'use strict';
+/**
+ * Asset identity is separate from layer transforms. Caches never own source
+ * canvases.
+ */
+const picQuineAssets = (() => {
+  const decoded = new WeakMap();
+  const pngs = new WeakMap();
+  const thumbs = new WeakMap();
+  const revisions = new WeakMap();
+  const encodedLRU = new Map();
+  const limit = 16 * 1024 * 1024;
+  let encodedBytes = 0;
+  function decodeOnce(file) {
+    const cached = decoded.get(file);
+    const live = cached?.weak?.deref();
+    if (live) {
+      return Promise.resolve(live);
+    }
+    if (cached?.pending) {
+      return cached.pending;
+    }
+    const pending = Promise.resolve().then(() => picQuineImages.decode(file));
+    decoded.set(file, {pending});
+    pending.then(
+        (canvas) => {
+          if (typeof WeakRef !== 'undefined') {
+            decoded.set(file, {weak: new WeakRef(canvas)});
+          } else {
+            decoded.delete(file);
+          }
+          // The source PNG is already encoded and immutable; do not encode it
+          // again.
+          if (file.type === 'image/png' && file.size <= limit) {
+            const entry = {
+              valid: true,
+              promise: Promise.resolve(file),
+              bytes: file.size,
+            };
+            while (encodedBytes + entry.bytes > limit) {
+              const [old, size] = encodedLRU.entries().next().value;
+              old.valid = false;
+              old.promise = null;
+              encodedBytes -= size;
+              encodedLRU.delete(old);
+            }
+            pngs.set(canvas, entry);
+            encodedLRU.set(entry, entry.bytes);
+            encodedBytes += entry.bytes;
+          }
+        },
+        () => decoded.delete(file),
+    );
+    return pending;
+  }
+  function png(canvas) {
+    let entry = pngs.get(canvas);
+    if (entry?.valid) {
+      if (encodedLRU.has(entry)) {
+        encodedLRU.delete(entry);
+        encodedLRU.set(entry, entry.bytes);
+      }
+      return entry.promise;
+    }
+    entry = {valid: true, bytes: 0, promise: null};
+    entry.promise =
+        Promise.resolve().then(() => picQuineImages.canvasPNG(canvas));
+    pngs.set(canvas, entry);
+    entry.promise.then(
+        (blob) => {
+          if (!entry.valid) {
+            return;
+          }
+          entry.bytes = blob.size;
+          if (blob.size > limit) {
+            entry.valid = false;
+            entry.promise = null;
+            return;
+          }
+          while (encodedBytes + blob.size > limit) {
+            const [old, size] = encodedLRU.entries().next().value;
+            old.valid = false;
+            old.promise = null;
+            encodedBytes -= size;
+            encodedLRU.delete(old);
+          }
+          encodedLRU.set(entry, blob.size);
+          encodedBytes += blob.size;
+        },
+        () => {
+          entry.valid = false;
+        },
+    );
+    return entry.promise;
+  }
+  function thumbnail(canvas) {
+    if (!thumbs.has(canvas)) {
+      const thumb = makeCanvas(76, 64);
+      const scale = Math.min(76 / canvas.width, 64 / canvas.height);
+      thumb.getContext('2d').drawImage(
+          canvas,
+          (76 - canvas.width * scale) / 2,
+          (64 - canvas.height * scale) / 2,
+          canvas.width * scale,
+          canvas.height * scale,
+      );
+      thumbs.set(canvas, thumb);
+    }
+    return thumbs.get(canvas);
+  }
+  function invalidate(canvas) {
+    const entry = pngs.get(canvas);
+    if (entry) {
+      entry.valid = false;
+      entry.promise = null;
+      if (encodedLRU.delete(entry)) {
+        encodedBytes -= entry.bytes;
+      }
+      pngs.delete(canvas);
+    }
+    thumbs.delete(canvas);
+    revisions.set(canvas, (revisions.get(canvas) || 0) + 1);
+  }
+  return {
+    decode: decodeOnce,
+    png,
+    thumbnail,
+    invalidate,
+    revision: (canvas) => revisions.get(canvas) || 0,
+  };
+})();
+
+</script>
+    <script data-source="files.js">
+'use strict';
+/**
+ * Request a native destination during the user's click, before
+ * encoding/compression.
+ */
+const picQuineFiles = (() => {
+  async function choose(name, type, description, extensions) {
+    if (!window.showSaveFilePicker) {
+      return {download: true};
+    }
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: name,
+        types: [{description, accept: {[type]: extensions}}],
+      });
+      return {handle};
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        return null;
+      }
+      toast('File picker unavailable; downloading instead.');
+      return {download: true};
+    }
+  }
+  async function write(blob, name, description, extensions, destination) {
+    const target =
+        destination || (await choose(name, blob.type, description, extensions));
+    if (!target) {
+      return false;
+    }
+    if (target.handle) {
+      const writable = await target.handle.createWritable();
+      try {
+        await writable.write(blob);
+        await writable.close();
+      } catch (error) {
+        await writable.abort?.().catch(() => {});
+        throw error;
+      }
+      return true;
+    }
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = name;
+    link.click();
+    // Let the browser begin the download before releasing its Blob URL.
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    return true;
+  }
+  return {choose, write};
+})();
+
+</script>
+    <script data-source="proof.js">
+'use strict';
+const picQuineProof = (() => {
+  const proofCanvas = $('#proofCanvas');
+  const {angle, layerCorners} = picQuineGeometry;
+  let active = false;
+  let ready = false;
+  let epoch = 0;
+  let task = null;
+  let rejectPending = null;
+  let token = null;
+  function proofExport(background, source = proofCanvas) {
+    const output = makeCanvas(editor.document.w, editor.document.h);
+    const outputContext = output.getContext('2d');
+    if (background) {
+      outputContext.fillStyle = background;
+      outputContext.fillRect(0, 0, output.width, output.height);
+    }
+    outputContext.drawImage(source, 0, 0);
+    return output;
+  }
+  function cancel() {
+    // Invalidate replies already queued by a terminated worker.
+    epoch++;
+    if (rejectPending) {
+      rejectPending(Error('Proof cancelled.'));
+      rejectPending = null;
+    }
+    if (task) {
+      task.terminate();
+      task = null;
+    }
+  }
+  async function enterProof() {
+    if (operations.busy || gesture || $('#modal').open) {
+      return;
+    }
+    if (!editor.document.layers.length) {
+      toast('Add an image or layer before previewing.');
+      return;
+    }
+    if (!active) {
+      editor.commit();
+      token = operations.acquire('proof');
+      if (!token) {
+        return;
+      }
+      active = true;
+      crop = shapeRegion = null;
+      setProofUI(true);
+    }
+    await renderProof();
+  }
+  function exitProof() {
+    cancel();
+    active = false;
+    ready = false;
+    operations.release(token);
+    token = null;
+    $('#proofProgress').hidden = true;
+    proofCanvas.width = proofCanvas.height = 1;
+    setProofUI(false);
+    setTool(tool);
+    render();
+    fit();
+    status('Editing');
+  }
+  async function renderProof() {
+    if (!active) {
+      return;
+    }
+    cancel();
+    const generation = epoch;
+    ready = false;
+    setProofUI(true);
+    $('#proofProgress').hidden = false;
+    $('#proofProgress').textContent = 'Rendering proof…';
+    $('#toolLabel').textContent = 'Read-only proof';
+    const method = $('#proofFilter').value || 'bicubic';
+    const label = method === 'bicubic' ? 'Bicubic' : 'Lanczos 3';
+    $('#toolHint').textContent = label + ' · Full resolution · Escape to edit';
+    try {
+      await renderLayers(proofCanvas, method);
+      if (generation !== epoch) {
+        return;
+      }
+      ready = true;
+      $('#proofProgress').hidden = true;
+      $('#export').disabled = false;
+      status(
+          `${label} proof · ${editor.document.w} × ${editor.document.h} px · ` +
+          'Read-only. Export uses this resampled proof. ' +
+          'Use 100% zoom to inspect pixels.');
+    } catch (e) {
+      if (generation !== epoch) {
+        return;
+      }
+      exitProof();
+      toast('Preview failed: ' + (e.message || String(e)));
+    }
+  }
+  // Preview and export share the same full-resolution worker path.
+  async function renderLayers(target, method) {
+    const generation = epoch;
+    const context = picQuineRenderer.prepare(
+        target,
+        editor.document.w,
+        editor.document.h,
+    );
+    try {
+      const url = URL.createObjectURL(
+          new Blob([picQuineResample.workerSource()], {
+            type: 'application/javascript',
+          }),
+      );
+      try {
+        task = new Worker(url);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+      const worker = task;
+      const layers = editor.document.layers.filter((layer) => layer.visible);
+      let n = 0;
+      for (const layer of layers) {
+        if (generation !== epoch) {
+          throw Error('Proof cancelled.');
+        }
+        $('#proofProgress').textContent =
+            `Rendering ${method} · layer ${++n} of ${layers.length}`;
+        status($('#proofProgress').textContent);
+        const corners = layerCorners(layer);
+        if (layer.opacity === 0 || corners.every((p) => p.x <= 0) ||
+            corners.every((p) => p.y <= 0) ||
+            corners.every((p) => p.x >= editor.document.w) ||
+            corners.every((p) => p.y >= editor.document.h)) {
+          continue;
+        }
+        const source = layer.canvas.getContext('2d').getImageData(
+            0, 0, layer.canvas.width, layer.canvas.height);
+        const result = await new Promise((resolve, reject) => {
+          rejectPending = reject;
+          worker.onmessage = ({data}) => {
+            rejectPending = null;
+            if (data.error) {
+              reject(Error(data.error));
+            } else {
+              resolve(data);
+            }
+          };
+          worker.onerror = () => {
+            rejectPending = null;
+            reject(
+                Error('The local proof worker could not render this image.'),
+            );
+          };
+          worker.postMessage(
+              {
+                id: n,
+                pixels: source.data.buffer,
+                sw: layer.canvas.width,
+                sh: layer.canvas.height,
+                x: layer.x,
+                y: layer.y,
+                w: layer.w,
+                h: layer.h,
+                cw: editor.document.w,
+                ch: editor.document.h,
+                rotation: angle(layer),
+                method,
+              },
+              // Transfer this readback buffer, never the layer's canvas.
+              [source.data.buffer],
+          );
+        });
+        if (generation !== epoch) {
+          throw Error('Proof cancelled.');
+        }
+        if (!result.width || !result.height) {
+          continue;
+        }
+        const tile = makeCanvas(result.width, result.height);
+        tile.getContext('2d').putImageData(
+            new ImageData(result.pixels, result.width, result.height),
+            0,
+            0,
+        );
+        context.globalAlpha = layer.opacity;
+        context.globalCompositeOperation = layer.blend;
+        context.drawImage(tile, result.x, result.y);
+        tile.width = tile.height = 1;
+      }
+      if (generation !== epoch) {
+        throw Error('Proof cancelled.');
+      }
+      context.globalAlpha = 1;
+      context.globalCompositeOperation = 'source-over';
+      return target;
+    } finally {
+      if (generation === epoch && task) {
+        task.terminate();
+        task = null;
+      }
+    }
+  }
+  return {
+    get active() {
+      return active;
+    },
+    get ready() {
+      return ready;
+    },
+    proofExport,
+    renderLayers,
+    enterProof,
+    exitProof,
+    renderProof,
+  };
+})();
+
+</script>
+    <script data-source="runtime.js">
+'use strict';
+/**
+ * Current and staged editor templates. Downloaded HTML is data until reopened.
+ */
+const picQuineRuntime = (() => {
+  let pristine;
+  let info;
+  let pending = null;
+  const slot =
+      /(<script\b(?=[^>]*\bid="picquine-project")(?=[^>]*\btype="application\/json")[^>]*>)[\s\S]*?(<\/script\s*>)/gi;
+  function capture() {
+    const root = document.documentElement.cloneNode(true);
+    if (root.querySelector('script[src]')) {
+      throw Error('Run npm run build and open dist/Editor-With-HEIC.html.');
+    }
+    root.querySelector('#picquine-project').textContent = 'null';
+    info = picQuineJSON.parse(
+        root.querySelector('#picquine-editor-info').textContent);
+    pristine = '<!doctype html>\n' + root.outerHTML;
+  }
+  function compatible(project, target = info) {
+    if (!target?.compatibility.projectVersions.includes(project.version)) {
+      return ['project version ' + project.version];
+    }
+    const missing = [];
+    for (const node
+      of [project, ...project.composition.layers,
+        ...Object.values(project.assets)]) {
+      for (const [name, extension] of Object.entries(node.extensions || {})) {
+        if (extension.required &&
+            !target.compatibility.extensions[name]?.includes(
+                extension.version)) {
+          missing.push(name + ' v' + extension.version);
+        }
+      }
+    }
+    return [...new Set(missing)];
+  }
+  function render(project, choice = 'current') {
+    const target = choice === 'loaded' ? pending : {html: pristine, info};
+    if (!target) {
+      throw Error('No loaded editor bundle.');
+    }
+    const missing = compatible(project, target.info);
+    if (missing.length) {
+      throw Error('Editor lacks required support: ' + missing.join(', '));
+    }
+    // Project text must never close its non-executable script element.
+    const json = JSON.stringify(project)
+        .replace(/</g, '\\u003c')
+        .replace(/\u2028/g, '\\u2028')
+        .replace(/\u2029/g, '\\u2029');
+    return target.html.replace(slot, (_, start, end) => start + json + end);
+  }
+  // Blob windows opened from file:// lack Web Crypto. SHA-256 fallback keeps
+  // subsequent bundle loads verifiable without a network dependency.
+  function hash(bytes) {
+    const rotate = (word, bits) => word >>> bits | word << (32 - bits);
+    const constants = [];
+    const state = [];
+    for (let candidate = 2; constants.length < 64; candidate++) {
+      let prime = true;
+      for (let divisor = 2; divisor * divisor <= candidate; divisor++) {
+        if (candidate % divisor === 0) {
+          prime = false;
+          break;
+        }
+      }
+      if (!prime) {
+        continue;
+      }
+      if (state.length < 8) {
+        state.push(Math.sqrt(candidate) * 2 ** 32 | 0);
+      }
+      constants.push(Math.cbrt(candidate) * 2 ** 32 | 0);
+    }
+    const padded = new Uint8Array(Math.ceil((bytes.length + 9) / 64) * 64);
+    padded.set(bytes);
+    padded[bytes.length] = 128;
+    const view = new DataView(padded.buffer);
+    const words = new Int32Array(64);
+    view.setUint32(padded.length - 8, Math.floor(bytes.length / 2 ** 29));
+    view.setUint32(padded.length - 4, bytes.length * 8);
+    for (let offset = 0; offset < padded.length; offset += 64) {
+      for (let index = 0; index < 64; index++) {
+        if (index < 16) {
+          words[index] = view.getInt32(offset + index * 4);
+        } else {
+          const earlier = words[index - 15];
+          const recent = words[index - 2];
+          words[index] = words[index - 16] +
+              (rotate(earlier, 7) ^ rotate(earlier, 18) ^ earlier >>> 3) +
+              words[index - 7] +
+              (rotate(recent, 17) ^ rotate(recent, 19) ^ recent >>> 10);
+        }
+      }
+      let [a, b, c, d, e, f, g, h] = state;
+      for (let index = 0; index < 64; index++) {
+        const sum = h + (rotate(e, 6) ^ rotate(e, 11) ^ rotate(e, 25)) +
+            (e & f ^ ~e & g) + constants[index] + words[index];
+        const major = (rotate(a, 2) ^ rotate(a, 13) ^ rotate(a, 22)) +
+            (a & b ^ a & c ^ b & c);
+        h = g;
+        g = f;
+        f = e;
+        e = d + sum | 0;
+        d = c;
+        c = b;
+        b = a;
+        a = sum + major | 0;
+      }
+      [a, b, c, d, e, f, g, h].forEach(
+          (word, index) => state[index] = state[index] + word | 0);
+    }
+    return state.map((word) => (word >>> 0).toString(16).padStart(8, '0'))
+        .join('');
+  }
+  async function stage(url) {
+    const address = new URL(url);
+    if (!['https:', 'http:'].includes(address.protocol)) {
+      throw Error('Enter an HTTP(S) bundle URL.');
+    }
+    const response = await fetch(address.href, {
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer',
+      redirect: 'error',
+    });
+    if (!response.ok) {
+      throw Error('Bundle request failed: HTTP ' + response.status);
+    }
+    const bundle = picQuineJSON.parse(
+        await picQuineStandalone.readText(response.body, 20000000));
+    if (bundle.format !== 'picquine-editor-bundle' || bundle.version !== 1 ||
+        !bundle.editor ||
+        !/^[a-z][a-z0-9]*(\.[a-z][a-z0-9-]*)+$/.test(bundle.editor.id) ||
+        ![bundle.editor.profile, bundle.editor.version, bundle.editor.build]
+            .every((value) => typeof value === 'string' && value.length) ||
+        !Array.isArray(bundle.compatibility?.projectVersions) ||
+        !bundle.compatibility.projectVersions.length ||
+        !bundle.compatibility.projectVersions.every(
+            (version) => Number.isInteger(version) && version > 0) ||
+        new Set(bundle.compatibility.projectVersions).size !==
+            bundle.compatibility.projectVersions.length ||
+        !bundle.compatibility.extensions ||
+        typeof bundle.compatibility.extensions !== 'object' ||
+        Array.isArray(bundle.compatibility.extensions) ||
+        bundle.payload?.encoding !== 'gzip+base64' ||
+        Object.keys(bundle.payload).sort().join(',') !==
+            'base64,encoding,sha256' ||
+        !/^[a-f0-9]{64}$/.test(bundle.payload.sha256)) {
+      throw Error('Invalid editor bundle.');
+    }
+    for (const [name, versions] of Object.entries(
+        bundle.compatibility.extensions)) {
+      if (!/^[a-z][a-z0-9]*(\.[a-z][a-z0-9-]*)+$/.test(name) ||
+          !Array.isArray(versions) || !versions.length ||
+          new Set(versions).size !== versions.length ||
+          !versions.every(
+              (version) => Number.isInteger(version) && version > 0)) {
+        throw Error('Invalid bundle capabilities.');
+      }
+    }
+    const packed = picQuineStandalone.fromBase64(bundle.payload.base64);
+    const html = await picQuineStandalone.readText(
+        packed.stream().pipeThrough(new DecompressionStream('gzip')), 20000000);
+    const bytes = new TextEncoder().encode(html);
+    const digest = crypto.subtle ?
+        [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))]
+            .map((byte) => byte.toString(16).padStart(2, '0'))
+            .join('') :
+        hash(bytes);
+    if (digest !== bundle.payload.sha256) {
+      throw Error('Bundle SHA-256 mismatch.');
+    }
+    // Inert parsing avoids running code or fetching template subresources.
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    const parsed = template.content;
+    const slots = parsed.querySelectorAll('#picquine-project');
+    const identities = parsed.querySelectorAll('#picquine-editor-info');
+    if (slots.length !== 1 ||
+        slots[0].getAttribute('type') !== 'application/json' ||
+        slots[0].textContent.trim() !== 'null' || identities.length !== 1 ||
+        identities[0].getAttribute('type') !== 'application/json' ||
+        parsed.querySelector('script[src],link[href]:not([href^="data:"])')) {
+      throw Error('Bundle must contain a complete blank editor HTML.');
+    }
+    const identity = picQuineJSON.parse(identities[0].textContent);
+    if (!picQuineJSON.equal(identity.editor, bundle.editor) ||
+        !picQuineJSON.equal(identity.compatibility, bundle.compatibility)) {
+      throw Error('Bundle identity mismatch.');
+    }
+    const project = await picQuineProject.buildData(editor.document);
+    const missing = compatible(project, identity);
+    if (missing.length) {
+      throw Error(
+          'Loaded editor lacks required support: ' + missing.join(', '));
+    }
+    // Commit only after every check, preserving the old candidate on failure.
+    pending = {url: address.href, info: identity, html};
+    return pending;
+  }
+  return {
+    capture,
+    compatible,
+    render,
+    stage,
+    get info() {
+      return info;
+    },
+    get pending() {
+      return pending;
+    },
+  };
+})();
+
+</script>
+    <script data-source="standalone.js">
+'use strict';
+const picQuineStandalone = (() => {
+  async function base64(blob) {
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const chunks = [];
+    for (let offset = 0; offset < bytes.length; offset += 32768) {
+      chunks.push(
+          String.fromCharCode(...bytes.subarray(offset, offset + 32768)));
+    }
+    return btoa(chunks.join(''));
+  }
+  function fromBase64(value) {
+    if (typeof value !== 'string' ||
+        value.length > Math.ceil(picQuineConfig.limits.assetBytes / 3) * 4 ||
+        value.length % 4 || !/^[A-Za-z0-9+/]*={0,2}$/.test(value)) {
+      throw Error('Invalid Base64 asset.');
+    }
+    const chunks = [];
+    for (let offset = 0; offset < value.length; offset += 65536) {
+      const part = value.slice(offset, offset + 65536);
+      const raw = atob(part);
+      if (btoa(raw) !== part) {
+        throw Error('Noncanonical Base64 asset.');
+      }
+      chunks.push(Uint8Array.from(raw, (char) => char.charCodeAt(0)));
+    }
+    return new Blob(chunks);
+  }
+  async function readText(stream, limit = picQuineConfig.limits.htmlBytes) {
+    const reader = stream.getReader();
+    const chunks = [];
+    let bytes = 0;
+    try {
+      while (true) {
+        const {value, done} = await reader.read();
+        if (done) {
+          break;
+        }
+        bytes += value.byteLength;
+        if (bytes > limit) {
+          throw Error('Input exceeds the size limit.');
+        }
+        chunks.push(value);
+      }
+    } catch (error) {
+      await reader.cancel().catch(() => {});
+      throw error;
+    } finally {
+      reader.releaseLock();
+    }
+    // Preserve a BOM as text so bundle hashes cover the exact UTF-8 payload.
+    return new TextDecoder('utf-8', {fatal: true, ignoreBOM: true})
+        .decode(await new Blob(chunks).arrayBuffer());
+  }
+  function extract(html) {
+    const matches = [
+      ...html.matchAll(
+          /<script\b(?=[^>]*\bid="picquine-project")(?=[^>]*\btype="application\/json")[^>]*>([\s\S]*?)<\/script\s*>/gi),
+    ];
+    if (matches.length !== 1) {
+      throw Error('Open a PicQuine project HTML or single-HTML ZIP file.');
+    }
+    return picQuineJSON.parse(matches[0][1]);
+  }
+  async function encode(project, choice) {
+    const html = picQuineRuntime.render(project, choice);
+    const blob = new Blob([html], {type: 'text/html'});
+    if (blob.size > picQuineConfig.limits.htmlBytes) {
+      throw Error('Project HTML exceeds the size limit.');
+    }
+    return picQuineArchive.pack(
+        picQuineDocument.fileStem(project.composition.name) + '.html', blob);
+  }
+  return {
+    base64,
+    fromBase64,
+    readText,
+    extract,
+    encode,
+    readHTML: (blob) => readText(blob.stream()),
+    restore: (project) => picQuineProject.restore(project),
+  };
+})();
+
+</script>
+    <script type="application/json" id="picquine-project">null</script>
+    <script data-source="demo.js">
+'use strict';
+/** The sample uses the same original-SVG import path as user artwork. */
+const picQuineDemo = {
+  async create() {
+    const quote = 'Make room for little changes...';
+    const caption =
+        'P  I  C  Q  U  I  N  E  /pɪk.\'waɪn/    S T U D Y   N O . 0 1';
+    const definitions = [
+      {
+        name: 'Warm paper',
+        w: 1200,
+        h: 800,
+        x: 0,
+        y: 0,
+        markup: '<rect width="1200" height="800" fill="#e8e7d7"/>',
+      },
+      {
+        name: 'Sage / circle',
+        w: 480,
+        h: 480,
+        x: 570,
+        y: 85,
+        markup: '<circle cx="240" cy="240" r="235" fill="#b4bf91"/>',
+      },
+      {
+        name: 'Forest / arch',
+        w: 340,
+        h: 510,
+        x: 135,
+        y: 200,
+        markup:
+            '<path d="M0 170 A170 170 0 0 1 340 170 V510 H0 Z" fill="#354637"/>',
+      },
+      {
+        name: quote,
+        w: 580,
+        h: 150,
+        x: 500,
+        y: 610,
+        markup: `<text x="0" y="65" font-family="Georgia,serif" font-size="32pt" fill="#293f30">${
+          quote}</text><text x="3" y="115" font-family="sans-serif" font-size="13" fill="#293f30">${
+          caption}</text>`,
+        // Text metadata uses source pixels; SVG keeps its original font units.
+        text: {
+          content: quote + '\n' + caption,
+          runs: [
+            {
+              content: quote,
+              fontFamily: 'Georgia',
+              fontSize: 36,
+              color: '#293f30',
+              x: 0,
+              y: 65,
+            },
+            {
+              content: caption,
+              fontFamily: 'sans-serif',
+              fontSize: 14,
+              color: '#293f30',
+              x: 3,
+              y: 115,
+            },
+          ],
+        },
+      },
+    ];
+    const layers = [];
+    for (const [i, item] of definitions.entries()) {
+      const svg =
+          `<svg xmlns="http://www.w3.org/2000/svg" width="${item.w}" height="${
+            item.h}" viewBox="0 0 ${item.w} ${item.h}">${item.markup}</svg>`;
+      const file =
+          new File([svg], `sample-${i + 1}.svg`, {type: 'image/svg+xml'});
+      layers.push({
+        id: uid(),
+        name: item.name,
+        canvas: await assets.decode(file),
+        x: item.x,
+        y: item.y,
+        w: item.w,
+        h: item.h,
+        opacity: 1,
+        visible: true,
+        blend: 'source-over',
+        rotation: 0,
+        original: {blob: file, name: file.name, type: file.type},
+        pixelsEdited: false,
+        ...(item.text ? {text: item.text} : {}),
+      });
+    }
+    return {
+      w: 1200,
+      h: 800,
+      name: 'Quiet forms',
+      layers,
+      selected: layers.at(-1).id,
+    };
+  },
+};
+
+</script>
+    <script data-source="app.js">
+'use strict';
+// Capture the blank editor before UI mutations become part of future saves.
+picQuineRuntime.capture();
+const canvas = $('#canvas');
+const overlay = $('#overlay');
+const overlayContext = overlay.getContext('2d');
+let tool = 'move';
+let crop = null;
+let shapeRegion = null;
+let gesture = null;
+let importMode = 'open';
+const operations = picQuineOperations.create(syncOperationUI);
+const editor = picQuineHistory.create(
+    {w: 1200, h: 800, name: 'Untitled', layers: [], selected: null},
+    {
+      canEdit: (token) => operations.canEdit(token) &&
+          (!editor.document.readOnly || token?.name === 'open-project'),
+      onChange: updateHistory,
+    },
+);
+const selected = () => editor.document.layers.find(
+    (layer) => layer.id === editor.document.selected);
+const {angle, layerCorners, layerPoint, normalRect, resizeDimensions} =
+    picQuineGeometry;
+const {dimensions} = picQuineDocument;
+const {drawShape} = picQuineShapes;
+const assets = picQuineAssets;
+const proof = picQuineProof;
+// Reassignable so file-I/O tests can substitute the save operation.
+let writeFile = picQuineFiles.write;
+const {enterProof, exitProof, renderProof, proofExport} = proof;
+const {buildProject, readProject} = picQuineProject;
+function composite(target, background) {
+  return picQuineRenderer.composite(target, editor.document, background);
+}
+function toast(s) {
+  $('#toast').textContent = s;
+  $('#toast').style.display = 'block';
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => ($('#toast').style.display = 'none'), 4500);
+}
+function status(s) {
+  $('#status').textContent = s;
+}
+function snapshot() {
+  return editor.snapshot();
+}
+function mutate(label, mutation, token) {
+  if (gesture) {
+    editor.commit();
+    gesture = null;
+  }
+  const changed = editor.transact(label, mutation, token);
+  if (changed) {
+    render();
+  }
+  return changed;
+}
+function updateHistory() {
+  $('#undo').disabled = operations.state !== 'idle' ||
+      !!editor.document.readOnly || !editor.past.length;
+  $('#redo').disabled = operations.state !== 'idle' ||
+      !!editor.document.readOnly || !editor.future.length;
+}
+function restoreView() {
+  crop = null;
+  shapeRegion = null;
+  render();
+  fit();
+}
+function undo() {
+  if (editor.undo()) {
+    restoreView();
+  }
+}
+function redo() {
+  if (editor.redo()) {
+    restoreView();
+  }
+}
+function newLayer(c, name, x = 0, y = 0) {
+  return {
+    id: uid(),
+    name,
+    canvas: c,
+    x,
+    y,
+    w: c.width,
+    h: c.height,
+    opacity: 1,
+    visible: true,
+    blend: 'source-over',
+    rotation: 0,
+  };
+}
+function addLayer(c, name, x = 0, y = 0) {
+  const layer = newLayer(c, name, x, y);
+  editor.document.layers.push(layer);
+  editor.document.selected = layer.id;
+  return layer;
+}
+
+const requestDraw = picQuineRenderer.scheduler(
+    (callback) => typeof window.requestAnimationFrame === 'function' ?
+        window.requestAnimationFrame(callback) :
+        callback(),
+    (composition) => (composition ? draw() : drawOverlay()),
+);
+function draw() {
+  if (proof.active) {
+    return;
+  }
+  composite(canvas);
+  drawOverlay();
+}
+function drawOverlay() {
+  if (proof.active) {
+    return;
+  }
+  picQuineRenderer.prepare(overlay, editor.document.w, editor.document.h);
+  const scale =
+      $('#stage').getBoundingClientRect().width / editor.document.w || 1;
+  overlayContext.lineWidth = 1.2 / scale;
+  overlayContext.strokeStyle = '#d8edb1';
+  if (crop) {
+    const bounds = normalRect(crop);
+    overlayContext.fillStyle = '#07120aa0';
+    overlayContext.fillRect(0, 0, editor.document.w, editor.document.h);
+    overlayContext.clearRect(bounds.x, bounds.y, bounds.w, bounds.h);
+    overlayContext.strokeRect(bounds.x, bounds.y, bounds.w, bounds.h);
+    overlayContext.beginPath();
+    for (let i = 1; i < 3; i++) {
+      overlayContext.moveTo(bounds.x + (bounds.w * i) / 3, bounds.y);
+      overlayContext.lineTo(bounds.x + (bounds.w * i) / 3, bounds.y + bounds.h);
+      overlayContext.moveTo(bounds.x, bounds.y + (bounds.h * i) / 3);
+      overlayContext.lineTo(bounds.x + bounds.w, bounds.y + (bounds.h * i) / 3);
+    }
+    overlayContext.stroke();
+  } else {
+    const layer = selected();
+    if (layer && tool === 'move') {
+      overlayContext.setLineDash([5 / scale, 4 / scale]);
+      const points = layerCorners(layer);
+      overlayContext.beginPath();
+      overlayContext.moveTo(points[0].x, points[0].y);
+      for (const pointer of points.slice(1)) {
+        overlayContext.lineTo(pointer.x, pointer.y);
+      }
+      overlayContext.closePath();
+      overlayContext.stroke();
+    }
+    if (isShapeTool() && shapeRegion) {
+      const bounds = normalRect(shapeRegion);
+      const style = shapeStyle();
+      if (style) {
+        overlayContext.globalAlpha = 0.7;
+        drawShape(overlayContext, bounds, style, tool);
+        overlayContext.globalAlpha = 1;
+      }
+    }
+  }
+}
+function render() {
+  draw();
+  $('#welcome').hidden = !!editor.document.layers.length;
+  $('#docName').value = editor.document.name;
+  document.title = editor.document.name + ' — PicQuine';
+  $('#docSize').textContent = `${editor.document.w} × ${editor.document.h} px`;
+  $('#layerCount').textContent = `${editor.document.layers.length} layer${
+      editor.document.layers.length === 1 ? '' : 's'}`;
+  renderLayers();
+  properties();
+  updateHistory();
+}
+const layerRows = new Map();
+let layerOrder = '';
+function renderLayers() {
+  const list = $('#layers');
+  const layers = [...editor.document.layers].reverse();
+  const ids = new Set(layers.map((layer) => layer.id));
+  for (const id of layerRows.keys()) {
+    if (!ids.has(id)) {
+      layerRows.delete(id);
+    }
+  }
+  for (const layer of layers) {
+    let item = layerRows.get(layer.id);
+    if (!item) {
+      const row = document.createElement('div');
+      const thumb = makeCanvas(76, 64);
+      const title = document.createElement('span');
+      const visibility = document.createElement('button');
+      thumb.className = 'thumb';
+      title.className = 'layer-title';
+      row.tabIndex = 0;
+      row.setAttribute('role', 'button');
+      row.append(thumb, title, visibility);
+      row.onclick = () => {
+        if (!operations.canEdit()) {
+          return;
+        }
+        editor.document.selected = layer.id;
+        renderLayers();
+        properties();
+        drawOverlay();
+      };
+      row.onkeydown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          row.onclick();
+        }
+      };
+      visibility.onclick = (e) => {
+        e.stopPropagation();
+        mutate('Toggle visibility', () => {
+          const current = editor.document.layers.find((n) => n.id === layer.id);
+          if (current) {
+            current.visible = !current.visible;
+          }
+        });
+        render();
+      };
+      item = {row, thumb, title, visibility, source: null, revision: -1};
+      layerRows.set(layer.id, item);
+    }
+    item.row.className =
+        'layer' + (layer.id === editor.document.selected ? ' selected' : '');
+    item.row.setAttribute('aria-label', 'Select ' + layer.name);
+    item.title.textContent = layer.name;
+    item.visibility.textContent = layer.visible ? '◉' : '○';
+    item.visibility.title = layer.visible ? 'Hide layer' : 'Show layer';
+    item.visibility.setAttribute(
+        'aria-label',
+        item.visibility.title + ' ' + layer.name,
+    );
+    if (item.source !== layer.canvas ||
+        item.revision !== assets.revision(layer.canvas)) {
+      const c = picQuineRenderer.prepare(item.thumb, 76, 64);
+      c.drawImage(assets.thumbnail(layer.canvas), 0, 0);
+      item.source = layer.canvas;
+      item.revision = assets.revision(layer.canvas);
+    }
+  }
+  const order = JSON.stringify(layers.map((layer) => layer.id));
+  if (order !== layerOrder) {
+    list.replaceChildren(...layers.map((layer) => layerRows.get(layer.id).row));
+    layerOrder = order;
+  }
+}
+function properties() {
+  const layer = selected();
+  $('#editLayer').hidden = !layer ||
+      !(layer.text || layer.original?.type?.toLowerCase() === 'image/svg+xml');
+  $('#properties')
+      .querySelectorAll('input,select')
+      .forEach((i) => (i.disabled = !layer));
+  for (const id of ['duplicate', 'delete', 'raise', 'lower', 'rotate90']) {
+    $('#' + id).disabled = !layer;
+  }
+  if (!layer) {
+    return;
+  }
+  $('#layerName').value = layer.name;
+  $('#opacity').value = layer.opacity * 100;
+  $('#opacityValue').value = Math.round(layer.opacity * 100) + '%';
+  $('#posX').value = Math.round(layer.x);
+  $('#posY').value = Math.round(layer.y);
+  const percent = $('#layerSizeUnit').value === 'percent';
+  $('#layerWidth').min = $('#layerHeight').min = percent ? '0.01' : '1';
+  $('#layerWidth').step = $('#layerHeight').step = 'any';
+  $('#layerWidth').value =
+      percent ? +(layer.w / layer.canvas.width * 100).toFixed(4) : layer.w;
+  $('#layerHeight').value =
+      percent ? +(layer.h / layer.canvas.height * 100).toFixed(4) : layer.h;
+  $('#blend').value = layer.blend;
+  $('#rotation').value = angle(layer) || 360;
+  $('#rotationValue').value = (angle(layer) || 360) + '°';
+  $('#rotate90').disabled = false;
+}
+function textDialog(text) {
+  const first = text?.runs[0];
+  return modal(
+      text ? 'Edit text' : 'Add text', 'text-fields',
+      text ? 'Save' : 'Add text', () => ({
+        text: $('#textContent').value,
+        size: +$('#textSize').value,
+        font: $('#textFont').value,
+        color: $('#textColor').value,
+      }),
+      () => {
+        $('#textColor').value = first?.color || $('#color').value;
+        if (!text) {
+          return;
+        }
+        $('#textContent').value = text.content;
+        const fonts = $('#textFont');
+        if (![...fonts.options].some(
+            (option) => option.value === first.fontFamily)) {
+          const option = document.createElement('option');
+          option.value = option.textContent = first.fontFamily;
+          fonts.append(option);
+        }
+        fonts.value = first.fontFamily;
+        $('#textSize').value = first.fontSize;
+      });
+}
+function renderText(data) {
+  const size = data.size;
+  const lines = data.text.split('\n');
+  if (!data.text || data.text.length > 2000 || lines.length > 20 ||
+      !Number.isFinite(size) || size < 1 || size > 1000) {
+    toast('Use 1–1000 px text with at most 20 lines and 2000 characters.');
+    return null;
+  }
+  const family =
+      ['system-ui', 'serif', 'sans-serif', 'monospace'].includes(data.font) ?
+      data.font :
+      JSON.stringify(data.font);
+  const font = `${size}px ${family}`;
+  const measure = makeCanvas(1, 1).getContext('2d');
+  measure.font = font;
+  const width = Math.ceil(
+      Math.max(...lines.map((line) => measure.measureText(line).width)) + 8);
+  const height = Math.ceil(size * 1.4 * lines.length);
+  if (!dimensions(width, height)) {
+    toast('This text is too large. Use a smaller size or shorter text.');
+    return null;
+  }
+  const pixels = makeCanvas(width, height);
+  const context = pixels.getContext('2d');
+  context.font = font;
+  context.fillStyle = data.color;
+  const text = {
+    content: data.text,
+    runs: lines.map((content, index) => ({
+      content,
+      fontFamily: data.font,
+      fontSize: size,
+      color: data.color,
+      x: 4,
+      y: size + index * size * 1.4,
+    })),
+  };
+  for (const run of text.runs) {
+    context.fillText(run.content, run.x, run.y);
+  }
+  return {pixels, text};
+}
+async function editLayer() {
+  const layer = selected();
+  if (!layer || operations.state !== 'idle' || editor.document.readOnly) {
+    return;
+  }
+  editor.commit();
+  const token = operations.acquire('edit-layer');
+  if (!token) {
+    return;
+  }
+  try {
+    let pixels;
+    let text;
+    let original = layer.original;
+    if (layer.text) {
+      const data = await textDialog(layer.text);
+      if (!data) {
+        return;
+      }
+      const first = layer.text.runs[0];
+      if (data.text === layer.text.content && data.font === first.fontFamily &&
+          data.size === first.fontSize && data.color === first.color) {
+        return;
+      }
+      const rendered = renderText(data);
+      if (!rendered) {
+        return;
+      }
+      ({pixels, text} = rendered);
+    } else if (original?.type?.toLowerCase() === 'image/svg+xml') {
+      const markup = await original.blob.text();
+      const value = await modal(
+          'Edit SVG', 'svg-fields', 'Save', () => $('#svgContent').value,
+          () => {
+            $('#svgContent').value = markup;
+          });
+      if (value === null || value === markup) {
+        return;
+      }
+      const file = new File([value], original.name, {type: 'image/svg+xml'});
+      pixels = await assets.decode(file);
+      // New source identity; retain fork-owned file metadata with the new
+      // bytes.
+      original = {
+        blob: file,
+        name: file.name,
+        type: file.type,
+        ...(original.record ? {
+          record: {
+            ...original.record,
+            base64: await picQuineStandalone.base64(file),
+          },
+        } :
+                              {}),
+      };
+    } else {
+      return;
+    }
+    const total = editor.document.layers.reduce(
+        (sum, item) => sum +
+            (item === layer ? pixels.width * pixels.height :
+                              item.canvas.width * item.canvas.height),
+        0);
+    if (total > picQuineConfig.limits.projectPixels) {
+      throw Error('Project exceeds the pixel memory limit.');
+    }
+    mutate('Edit layer source', () => {
+      // Preserve position and source-relative scale when intrinsic size
+      // changes.
+      layer.w *= pixels.width / layer.canvas.width;
+      layer.h *= pixels.height / layer.canvas.height;
+      layer.canvas = pixels;
+      layer.original = original;
+      layer.pixelsEdited = !!text;
+      if (text) {
+        layer.text = text;
+      }
+    }, token);
+  } catch (error) {
+    toast(error.message || String(error));
+  } finally {
+    operations.release(token);
+  }
+}
+$('#editLayer').onclick = editLayer;
+
+function fit() {
+  const viewport = $('#viewport');
+  const z = $('#zoom').value;
+  const scale = z === 'fit' ?
+      Math.min(
+          (viewport.clientWidth - 80) / editor.document.w,
+          (viewport.clientHeight - 80) / editor.document.h,
+          1,
+      ) :
+      +z;
+  $('#stage').style.width = Math.max(1, editor.document.w * scale) + 'px';
+  $('#stage').style.height = Math.max(1, editor.document.h * scale) + 'px';
+  drawOverlay();
+}
+new ResizeObserver(fit).observe($('#viewport'));
+function setTool(t) {
+  tool = t;
+  crop = null;
+  shapeRegion = null;
+  document.querySelectorAll('[data-tool]')
+      .forEach((b) => b.classList.toggle('active', b.dataset.tool === t));
+  const labels = {
+    move: ['Move', 'Drag to position the selected layer'],
+    crop: ['Crop', 'Drag on the canvas to select your crop'],
+    brush: ['Brush', 'Paint on the selected layer'],
+    erase: ['Eraser', 'Erase to transparency on the selected layer'],
+    text: ['Text', 'Click on the canvas to add text'],
+    rect: ['Rectangle', 'Drag or enter exact bounds'],
+    ellipse: ['Ellipse', 'Drag or enter exact bounds'],
+  };
+  $('#toolLabel').textContent = labels[t][0];
+  $('#toolHint').textContent = labels[t][1];
+  $('#brushLabel').hidden = !['brush', 'erase'].includes(t);
+  $('#applyCrop').hidden = $('#cancelCrop').hidden = t !== 'crop';
+  $('#cropLayerLabel').hidden = t !== 'crop';
+  overlay.style.cursor = t === 'move' ? 'move' : 'crosshair';
+  $('#regionControls').hidden = !['crop', 'rect', 'ellipse'].includes(t);
+  $('#addRectangle').hidden = !isShapeTool();
+  $('#addRectangle').textContent =
+      t === 'ellipse' ? 'Add ellipse' : 'Add rectangle';
+  $('#shapeControls').hidden = !isShapeTool();
+  updateShapeControls();
+  $('#regionSize').textContent = '';
+  drawOverlay();
+}
+
+const point = (e) => {
+  const bounds = overlay.getBoundingClientRect();
+  return {
+    x: ((e.clientX - bounds.left) * editor.document.w) / bounds.width,
+    y: ((e.clientY - bounds.top) * editor.document.h) / bounds.height,
+  };
+};
+function clampPoint(pointer) {
+  return {
+    x: Math.max(0, Math.min(editor.document.w, pointer.x)),
+    y: Math.max(0, Math.min(editor.document.h, pointer.y)),
+  };
+}
+function paint(from, to) {
+  const layer = selected();
+  if (!layer) {
+    return;
+  }
+  assets.invalidate(layer.canvas);
+  const context = layer.canvas.getContext('2d');
+  context.save();
+  context.globalCompositeOperation =
+      tool === 'erase' ? 'destination-out' : 'source-over';
+  context.strokeStyle = $('#color').value;
+  context.fillStyle = $('#color').value;
+  context.lineWidth =
+      ((+$('#brushSize').value || 24) * layer.canvas.width) / layer.w;
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  const start = layerPoint(layer, from);
+  const end = layerPoint(layer, to);
+  context.beginPath();
+  context.moveTo(start.x, start.y);
+  context.lineTo(end.x, end.y);
+  context.stroke();
+  context.beginPath();
+  context.arc(end.x, end.y, context.lineWidth / 2, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+  requestDraw();
+}
+overlay.onpointerdown = async (e) => {
+  if (proof.active || operations.busy || e.button !== 0) {
+    return;
+  }
+  const pointer = point(e);
+  updatePointer(pointer);
+  if (isShapeTool()) {
+    shapeRegion = null;
+  }
+  if (tool === 'text') {
+    const data = await textDialog();
+    if (!data || !data.text) {
+      return;
+    }
+    const rendered = renderText(data);
+    if (!rendered) {
+      return;
+    }
+    const {pixels, text} = rendered;
+    mutate('Edit layer', () => {
+      const textLayer = addLayer(pixels, data.text, pointer.x, pointer.y);
+      textLayer.text = text;
+      setTool('move');
+      return;
+    });
+    return;
+  }
+  if (['move', 'brush', 'erase'].includes(tool) && !selected()) {
+    if (tool === 'erase' || tool === 'move') {
+      toast('Select or add a layer first.');
+      return;
+    }
+    if (!editor.begin('Paint')) {
+      return;
+    }
+    addLayer(makeCanvas(editor.document.w, editor.document.h), 'Paint');
+  } else if (['move', 'brush', 'erase'].includes(tool) && !editor.begin(tool)) {
+    return;
+  }
+  overlay.setPointerCapture(e.pointerId);
+  gesture = {start: pointer, last: pointer, x: selected()?.x, y: selected()?.y};
+  if (tool === 'crop') {
+    const clamped = clampPoint(pointer);
+    crop = {...clamped, w: 0, h: 0};
+    gesture.start = clamped;
+  }
+  if (['brush', 'erase'].includes(tool)) {
+    const layer = selected();
+    // History shares committed pixels; paint only into a reserved draft copy.
+    editor.reservePixelEdit(layer.canvas);
+    const copy = makeCanvas(layer.canvas.width, layer.canvas.height);
+    copy.getContext('2d').drawImage(layer.canvas, 0, 0);
+    layer.canvas = copy;
+    layer.pixelsEdited = true;
+    paint(pointer, pointer);
+  }
+};
+overlay.onpointermove = (e) => {
+  const pointer = point(e);
+  updatePointer(pointer);
+  if (!gesture) {
+    return;
+  }
+  if (tool === 'move') {
+    const layer = selected();
+    layer.x = Math.round(gesture.x + pointer.x - gesture.start.x);
+    layer.y = Math.round(gesture.y + pointer.y - gesture.start.y);
+    requestDraw();
+    properties();
+  }
+  if (tool === 'crop') {
+    const clamped = clampPoint(pointer);
+    crop = {
+      ...gesture.start,
+      w: clamped.x - gesture.start.x,
+      h: clamped.y - gesture.start.y,
+    };
+    syncRegion(crop);
+    requestDraw(/* composition= */ false);
+  }
+  if (['brush', 'erase'].includes(tool)) {
+    paint(gesture.last, pointer);
+  }
+  if (isShapeTool()) {
+    shapeRegion = {
+      ...gesture.start,
+      w: pointer.x - gesture.start.x,
+      h: pointer.y - gesture.start.y,
+    };
+    syncRegion(shapeRegion);
+    requestDraw(/* composition= */ false);
+  }
+  gesture.last = pointer;
+};
+function endGesture() {
+  if (!gesture) {
+    return;
+  }
+  if (isShapeTool() && shapeRegion) {
+    commitShape();
+  }
+  gesture = null;
+  editor.commit();
+  render();
+}
+function updatePointer(pointer) {
+  $('#coordinates').textContent =
+      `X ${Math.round(pointer.x)}  Y ${Math.round(pointer.y)}`;
+}
+function syncRegion(region) {
+  const bounds = normalRect(region);
+  for (const [id, key] of [
+    ['regionX', 'x'],
+    ['regionY', 'y'],
+    ['regionW', 'w'],
+    ['regionH', 'h'],
+  ]) {
+    $('#' + id).value = Math.round(bounds[key]);
+  }
+  $('#regionSize').textContent =
+      `W ${Math.round(bounds.w)}  H ${Math.round(bounds.h)}`;
+}
+function precisionRegion() {
+  const bounds = {
+    x: +$('#regionX').value,
+    y: +$('#regionY').value,
+    w: +$('#regionW').value,
+    h: +$('#regionH').value,
+  };
+  if (!Object.values(bounds).every(Number.isFinite) ||
+      !Object.values(bounds).every(Number.isInteger) ||
+      !dimensions(bounds.w, bounds.h) || Math.abs(bounds.x) > 100000 ||
+      Math.abs(bounds.y) > 100000) {
+    return null;
+  }
+  return bounds;
+}
+function isShapeTool() {
+  return tool === 'rect' || tool === 'ellipse';
+}
+function shapeStyle() {
+  const width = +$('#shapeStrokeWidth').value;
+  const mode = $('#shapeMode').value || 'both';
+  if (!['stroke', 'both', 'fill'].includes(mode) ||
+      (mode !== 'fill' &&
+       (!Number.isInteger(width) || width < 1 || width > 4096))) {
+    return null;
+  }
+  return {
+    mode,
+    strokeWidth: width,
+    fill: $('#shapeFill').value || '#287c65',
+    stroke: $('#shapeStroke').value || '#ff0000',
+  };
+}
+function updateShapeControls() {
+  const mode = $('#shapeMode').value || 'both';
+  $('#shapeFill').disabled = mode === 'stroke';
+  $('#shapeStroke').disabled = $('#shapeStrokeWidth').disabled =
+      mode === 'fill';
+}
+
+function commitShape() {
+  if (proof.active || operations.busy || !isShapeTool()) {
+    return;
+  }
+  const bounds = shapeRegion ? normalRect(shapeRegion) : precisionRegion();
+  const style = shapeStyle();
+  if (!bounds || !dimensions(Math.round(bounds.w), Math.round(bounds.h))) {
+    return toast('Enter valid integer shape dimensions.');
+  }
+  if (!style) {
+    return toast('Stroke width must be an integer from 1 to 4096 pixels.');
+  }
+  mutate('commitShape', () => {
+    const c = makeCanvas(Math.round(bounds.w), Math.round(bounds.h));
+    drawShape(
+        c.getContext('2d'),
+        {x: 0, y: 0, w: c.width, h: c.height},
+        style,
+        tool,
+    );
+    addLayer(
+        c,
+        tool === 'ellipse' ? 'Ellipse' : 'Rectangle',
+        Math.round(bounds.x),
+        Math.round(bounds.y),
+    );
+    shapeRegion = null;
+    drawOverlay();
+  });
+}
+for (const id
+  of ['shapeMode', 'shapeFill', 'shapeStroke', 'shapeStrokeWidth']) {
+  $('#' + id).oninput = () => {
+    updateShapeControls();
+    drawOverlay();
+  };
+}
+$('#shapeMode').onchange = $('#shapeMode').oninput;
+for (const id of ['regionX', 'regionY', 'regionW', 'regionH']) {
+  $('#' + id).oninput = () => {
+    const bounds = precisionRegion();
+    if (!bounds) {
+      $('#regionSize').textContent = 'Invalid dimensions';
+      return;
+    }
+    if (tool === 'crop') {
+      crop = bounds;
+    } else if (isShapeTool()) {
+      shapeRegion = bounds;
+    }
+    syncRegion(bounds);
+    drawOverlay();
+  };
+}
+$('#addRectangle').onclick = commitShape;
+overlay.onpointerleave = () => {
+  $('#coordinates').textContent = 'X —  Y —';
+};
+$('#stage').onpointerleave = overlay.onpointerleave;
+$('#stage').onpointermove = (e) => updatePointer(point(e));
+overlay.onpointerup = endGesture;
+overlay.onpointercancel = () => {
+  editor.cancel();
+  gesture = null;
+  shapeRegion = null;
+  crop = null;
+  render();
+};
+
+function modal(
+    title,
+    templateId,
+    ok = 'Apply',
+    read = () => true,
+    initialize = () => {},
+) {
+  return new Promise((resolve) => {
+    $('#modalTitle').textContent = title;
+    $('#modalBody')
+        .replaceChildren($('#' + templateId).content.cloneNode(true));
+    initialize();
+    $('#modalOK').textContent = ok;
+    $('#modal').onclose = () =>
+      resolve($('#modal').returnValue === 'ok' ? read() : null);
+    // Escape must not reuse the previous dialog's accepted return value.
+    $('#modal').returnValue = 'cancel';
+    $('#modal').showModal();
+  });
+}
+async function newDocument() {
+  const d = await modal(
+      'A fresh canvas', 'new-fields', 'Create', () => ({
+        w: +$('#newW').value,
+        h: +$('#newH').value,
+      }));
+  if (!d) {
+    return;
+  }
+  if (!dimensions(d.w, d.h)) {
+    return toast('Use dimensions up to 16,384 px and 40 megapixels.');
+  }
+  mutate('newDocument', () => {
+    editor.document = {
+      w: d.w,
+      h: d.h,
+      name: 'Untitled',
+      layers: [],
+      selected: null,
+    };
+
+    fit();
+  });
+}
+
+async function resize() {
+  const ow = editor.document.w;
+  const oh = editor.document.h;
+  let unit = 'pixels';
+  const pending = modal(
+      'Resize canvas',
+      'resize-fields',
+      'Resize',
+      () => resizeDimensions(
+          ow, oh, +$('#resizeW').value, +$('#resizeH').value, unit),
+      () => {
+        $('#resizeW').value = ow;
+        $('#resizeH').value = oh;
+      },
+  );
+  $('#resizeW').oninput = () => {
+    if ($('#ratio').checked) {
+      $('#resizeH').value = unit === 'percent' ?
+          $('#resizeW').value :
+          Math.max(1, Math.round((+$('#resizeW').value * oh) / ow));
+    }
+  };
+  $('#resizeH').oninput = () => {
+    if ($('#ratio').checked) {
+      $('#resizeW').value = unit === 'percent' ?
+          $('#resizeH').value :
+          Math.max(1, Math.round((+$('#resizeH').value * ow) / oh));
+    }
+  };
+  $('#ratio').onchange = () => {
+    if ($('#ratio').checked) {
+      $('#resizeW').oninput();
+    }
+  };
+  $('#resizeUnit').onchange = () => {
+    const d = resizeDimensions(
+        ow,
+        oh,
+        +$('#resizeW').value,
+        +$('#resizeH').value,
+        unit,
+    );
+    unit = $('#resizeUnit').value;
+    $('#resizeW').value =
+        unit === 'percent' ? Math.round((d.w / ow) * 10000) / 100 : d.w;
+    $('#resizeH').value =
+        unit === 'percent' ? Math.round((d.h / oh) * 10000) / 100 : d.h;
+  };
+  const d = await pending;
+  if (!d) {
+    return;
+  }
+  if (!dimensions(d.w, d.h)) {
+    return toast('Use dimensions up to 16,384 px and 40 megapixels.');
+  }
+  mutate('resize', () => {
+    const sx = d.w / ow;
+    const sy = d.h / oh;
+    for (const layer of editor.document.layers) {
+      const cx = (layer.x + layer.w / 2) * sx;
+      const cy = (layer.y + layer.h / 2) * sy;
+      layer.w *= sx;
+      layer.h *= sy;
+      layer.x = cx - layer.w / 2;
+      layer.y = cy - layer.h / 2;
+    }
+    editor.document.w = d.w;
+    editor.document.h = d.h;
+
+    fit();
+    status('Canvas resized.');
+  });
+}
+$('#applyCrop').onclick = () => {
+  if (!crop) {
+    crop = precisionRegion();
+  }
+  if (!crop) {
+    return toast('Drag a crop area or enter its dimensions.');
+  }
+  const bounds = normalRect(crop);
+  const x = Math.round(bounds.x);
+  const y = Math.round(bounds.y);
+  const w = Math.min(editor.document.w - x, Math.round(bounds.w));
+  const h = Math.min(editor.document.h - y, Math.round(bounds.h));
+  if (x < 0 || y < 0 || bounds.x + bounds.w > editor.document.w ||
+      bounds.y + bounds.h > editor.document.h || w < 1 || h < 1) {
+    return toast('Crop must be inside the canvas.');
+  }
+  mutate('Edit layer', () => {
+    if ($('#cropToLayer').checked) {
+      const pixels = makeCanvas(w, h);
+      const c = pixels.getContext('2d');
+      c.translate(-x, -y);
+      for (const layer of editor.document.layers) {
+        if (!layer.visible) {
+          continue;
+        }
+        c.globalAlpha = layer.opacity;
+        c.globalCompositeOperation = layer.blend;
+        picQuineRenderer.drawLayer(c, layer);
+      }
+      addLayer(pixels, 'Crop', x, y);
+      setTool('move');
+      status('Cropped composition added as a new layer.');
+      return;
+    }
+    for (const layer of editor.document.layers) {
+      layer.x -= x;
+      layer.y -= y;
+    }
+    editor.document.w = w;
+    editor.document.h = h;
+    setTool('move');
+
+    fit();
+    status('Canvas cropped. Layer pixels outside the canvas are retained.');
+  });
+};
+$('#cancelCrop').onclick = () => setTool('move');
+
+async function importFiles(files, mode) {
+  if (proof.active) {
+    toast('Exit preview to import images.');
+    return;
+  }
+  if (operations.busy || gesture) {
+    return;
+  }
+  editor.commit();
+  const token = operations.acquire('import');
+  if (!token) {
+    return;
+  }
+  try {
+    let first = true;
+    for (const file of files) {
+      status('Opening ' + file.name + '…');
+      try {
+        const mime = picQuineImages.imageMime(file.name);
+        const type = mime === 'application/octet-stream' ? file.type : mime;
+        if (!picQuineConfig.imageTypes.includes(type)) {
+          throw Error('Unsupported image format.');
+        }
+        const c = await assets.decode(file);
+        mutate(
+            'importFiles',
+            () => {
+              if (first && mode === 'open') {
+                editor.document = {
+                  w: c.width,
+                  h: c.height,
+                  name: picQuineDocument.fileStem(
+                      file.name.replace(/\.[^.]+$/, '')),
+                  layers: [],
+                  selected: null,
+                };
+              }
+              const layer = addLayer(c, file.name);
+              layer.original = {
+                blob: file,
+                name: file.name,
+                type,
+              };
+              layer.pixelsEdited = false;
+              first = false;
+            },
+            token,
+        );
+      } catch (e) {
+        toast(file.name + ': ' + (e.message || String(e)));
+      }
+    }
+    fit();
+    status('Images opened');
+  } finally {
+    operations.release(token);
+  }
+}
+function pick(mode) {
+  if (operations.busy) {
+    return;
+  }
+  importMode = mode;
+  $('#fileInput').value = '';
+  $('#fileInput').click();
+}
+$('#fileInput').onchange = (e) => importFiles([...e.target.files], importMode);
+$('#viewport').ondragover = (e) => {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+};
+$('#viewport').ondrop = (e) => {
+  e.preventDefault();
+  importFiles(
+      [...e.dataTransfer.files],
+      editor.document.layers.length ? 'layer' : 'open',
+  );
+};
+async function exportImage() {
+  if (operations.busy || (proof.active && !proof.ready)) {
+    return;
+  }
+  const pending = modal(
+      'Export image', 'export-fields', 'Export',
+      () => ({
+        type: $('#exportFormat').value,
+        quality: +$('#exportQuality').value / 100,
+        bg: $('#exportBg').value,
+        filter: $('#exportResampling').value,
+      }));
+  $('#exportResampling').value =
+      proof.active ? $('#proofFilter').value : 'none';
+  $('#exportFormat').onchange = () => {
+    $('#qualityLabel').hidden = $('#exportFormat').value === 'image/png';
+    $('#bgLabel').hidden = $('#exportFormat').value !== 'image/jpeg';
+  };
+  const d = await pending;
+  if (!d) {
+    return;
+  }
+  editor.commit();
+  const exportToken = operations.acquire('export');
+  if (!exportToken) {
+    return;
+  }
+  try {
+    const ext = d.type.split('/')[1].replace('jpeg', 'jpg');
+    const name = picQuineDocument.fileStem(editor.document.name) + '.' + ext;
+    const destination = await picQuineFiles.choose(
+        name,
+        d.type,
+        ext.toUpperCase() + ' image',
+        ['.' + ext],
+    );
+    if (!destination) {
+      return;
+    }
+    const background = d.type === 'image/jpeg' ? d.bg : null;
+    let c;
+    if (d.filter === 'none') {
+      c = composite(makeCanvas(1, 1), background);
+    } else if (proof.active && d.filter === $('#proofFilter').value) {
+      c = proofExport(background);
+    } else {
+      const filtered = await proof.renderLayers(makeCanvas(1, 1), d.filter);
+      c = proofExport(background, filtered);
+      filtered.width = filtered.height = 1;
+    }
+    const blob =
+        await new Promise((resolve) => c.toBlob(resolve, d.type, d.quality));
+    if (!blob) {
+      throw Error('Could not encode this image.');
+    }
+    if (await writeFile(
+        blob,
+        name,
+        ext.toUpperCase() + ' image',
+        ['.' + ext],
+        destination,
+    )) {
+      status('Image exported.');
+    }
+  } catch (e) {
+    toast(e.message);
+  } finally {
+    if (exportToken) {
+      operations.release(exportToken);
+    }
+  }
+}
+// Source edits replace specs and pixels together; history retains the old pair.
+
+function syncOperationUI() {
+  const locked = operations.state !== 'idle' || !!editor.document.readOnly;
+  const io = operations.busy;
+  document.querySelectorAll('.tools, aside, .contextbar, #welcome')
+      .forEach((el) => (el.inert = locked));
+  document.querySelectorAll('.documentbar').forEach((el) => (el.inert = io));
+  for (const id
+    of ['new',
+      'open',
+      'projectOpen',
+      'saveProject',
+      'resize',
+      'docName',
+    ]) {
+    $('#' + id).disabled = locked;
+  }
+  $('#projectOpen').disabled = operations.state !== 'idle';
+  $('#loadEditor').disabled = operations.state !== 'idle';
+  $('#saveProject').disabled = operations.state !== 'idle' ||
+      (!!editor.document.readOnly && !picQuineRuntime.pending);
+  $('#preview').disabled = io || !!editor.document.readOnly;
+  $('#proofFilter').disabled = io;
+  $('#export').disabled =
+      !!editor.document.readOnly || io || (proof.active && !proof.ready);
+  updateHistory();
+}
+async function saveProject() {
+  if (operations.busy || proof.active || gesture) {
+    return;
+  }
+  editor.commit();
+  const token = operations.acquire('save');
+  if (!token) {
+    return;
+  }
+  let choice;
+  try {
+    choice = await modal(
+        'Save Project', 'save-fields', 'Save', () => $('#saveEditor').value,
+        () => {
+          const select = $('#saveEditor');
+          select.options[0].textContent =
+              'Current editor: ' + picQuineRuntime.info.editor.profile + ' ' +
+              picQuineRuntime.info.editor.version;
+          select.options[0].disabled = !!editor.document.readOnly;
+          if (picQuineRuntime.pending) {
+            const option = document.createElement('option');
+            option.value = 'loaded';
+            option.textContent = picQuineRuntime.pending.url;
+            select.append(option);
+            select.value = 'loaded';
+          }
+        });
+    if (!choice) {
+      return;
+    }
+  } finally {
+    if (!choice) {
+      operations.release(token);
+    }
+  }
+  const savingRevision = editor.revision;
+  status('Choose save destination…');
+  try {
+    const destination = await picQuineFiles.choose(
+        picQuineDocument.fileStem(editor.document.name) + '.zip',
+        'application/zip',
+        'PicQuine project ZIP',
+        ['.zip'],
+    );
+    if (!destination) {
+      status('Save cancelled.');
+      return;
+    }
+    status('Compressing project locally…');
+    const archive = await buildProject(snapshot(), choice);
+    if (await writeFile(
+        archive,
+        picQuineDocument.fileStem(editor.document.name) + '.zip',
+        'PicQuine project ZIP',
+        ['.zip'],
+        destination,
+    )) {
+      editor.markSaved(savingRevision);
+      status(
+          'Project saved. Extract the ZIP and open the HTML to continue editing.');
+    }
+  } catch (e) {
+    toast(e.message || String(e));
+    status('Project save failed.');
+  } finally {
+    operations.release(token);
+  }
+}
+
+$('#projectInput').onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file || operations.busy || proof.active) {
+    return;
+  }
+  editor.commit();
+  const token = operations.acquire('open-project');
+  if (!token) {
+    return;
+  }
+  status('Opening project locally…');
+  try {
+    const next = await readProject(file);
+    mutate(
+        'Open project',
+        () => {
+          editor.document = next;
+        },
+        token,
+    );
+    render();
+    fit();
+    editor.markSaved();
+    syncOperationUI();
+    status(
+        next.readOnly ? 'Read-only: missing ' + next.missing.join(', ') :
+                        'Layered project restored.');
+  } catch (e) {
+    toast(e.message || String(e));
+    status('Project could not be opened. Current document preserved.');
+  } finally {
+    operations.release(token);
+    e.target.value = '';
+  }
+};
+for (const [id, key] of [
+  ['layerName', 'name'],
+  ['posX', 'x'],
+  ['posY', 'y'],
+  ['blend', 'blend'],
+]) {
+  $('#' + id).onchange = () => {
+    const layer = selected();
+    if (!layer) {
+      return;
+    }
+    const v = ['x', 'y', 'w', 'h'].includes(key) ? +$('#' + id).value :
+                                                   $('#' + id).value;
+    if (typeof v === 'number' &&
+        (!Number.isFinite(v) || Math.abs(v) > 100000 ||
+         (['w', 'h'].includes(key) && v < 1))) {
+      properties();
+      return;
+    }
+    mutate('Edit layer', () => {
+      layer[key] = v;
+    });
+  };
+}
+$('#layerSizeUnit').onchange = properties;
+for (const [id, key, other] of [
+  ['layerWidth', 'w', 'h'], ['layerHeight', 'h', 'w']]) {
+  $('#' + id).onchange = () => {
+    const layer = selected();
+    if (!layer) {
+      return;
+    }
+    let value = +$('#' + id).value;
+    if ($('#layerSizeUnit').value === 'percent') {
+      value *= (key === 'w' ? layer.canvas.width : layer.canvas.height) / 100;
+    }
+    const paired = $('#layerRatio').checked ?
+        layer[other] * value / layer[key] :
+        layer[other];
+    if (![value, paired].every(
+        (v) => Number.isFinite(v) && v >= 1 && v <= 100000)) {
+      properties();
+      return;
+    }
+    mutate('Resize layer', () => {
+      layer[key] = value;
+      layer[other] = paired;
+    });
+  };
+}
+$('#opacity').onpointerdown = () => {
+  if (selected()) {
+    editor.begin('Adjust layer');
+  }
+};
+$('#opacity').onkeydown = (e) => {
+  if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'ArrowUp', 'ArrowDown']
+      .includes(
+          e.key,
+      ) &&
+      selected()) {
+    editor.begin('Opacity');
+  }
+};
+$('#opacity').oninput = () => {
+  const layer = selected();
+  if (layer && editor.begin('Opacity')) {
+    layer.opacity = +$('#opacity').value / 100;
+    $('#opacityValue').value = $('#opacity').value + '%';
+    requestDraw();
+  }
+};
+$('#rotate90').onclick = () => {
+  const layer = selected();
+  if (!layer) {
+    return;
+  }
+  mutate('Edit layer', () => {
+    layer.rotation = (angle(layer) + 90) % 360;
+  });
+};
+$('#rotation').onpointerdown = () => {
+  if (selected()) {
+    editor.begin('Rotate layer');
+  }
+};
+$('#rotation').onkeydown = (e) => {
+  if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End']
+      .includes(
+          e.key,
+      ) &&
+      selected()) {
+    editor.begin('Rotate layer');
+  }
+};
+$('#rotation').oninput = () => {
+  const layer = selected();
+  if (!layer || !editor.begin('Rotate layer')) {
+    return;
+  }
+  layer.rotation =
+      Math.max(1, Math.min(360, Math.round(+$('#rotation').value))) % 360;
+  $('#rotationValue').value = (angle(layer) || 360) + '°';
+  requestDraw();
+};
+$('#docName').onchange = () => {
+  const name = picQuineDocument.fileStem($('#docName').value);
+  if (name !== editor.document.name) {
+    mutate('Edit layer', () => {
+      editor.document.name = name;
+    });
+  }
+  $('#docName').value = name;
+};
+$('#docName').onkeydown = (e) => {
+  if (e.key === 'Enter') {
+    e.target.blur();
+  }
+};
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  $('#theme').textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+  $('#theme').setAttribute('aria-pressed', String(theme === 'dark'));
+  $('#theme').title =
+      'Switch to ' + (theme === 'dark' ? 'light' : 'dark') + ' mode';
+}
+$('#theme').onclick = () => {
+  const theme =
+      document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(theme);
+  try {
+    localStorage.setItem('picquine-theme', theme);
+  } catch {
+    // File and Blob origins may deny storage; the current theme still works.
+  }
+};
+try {
+  applyTheme(
+      localStorage.getItem('picquine-theme') === 'dark' ? 'dark' : 'light');
+} catch {
+  applyTheme('light');
+}
+$('#addLayer').onclick = () => {
+  mutate('Edit layer', () => {
+    addLayer(
+        makeCanvas(editor.document.w, editor.document.h),
+        'Transparent layer',
+    );
+  });
+};
+$('#duplicate').onclick = () => {
+  const layer = selected();
+  if (!layer) {
+    return;
+  }
+  mutate('Edit layer', () => {
+    // Duplicate metadata now; pixel sources stay shared until a paint edit.
+    const n = {
+      ...layer,
+      id: uid(),
+      name: layer.name + ' copy',
+      x: layer.x + 20,
+      y: layer.y + 20,
+    };
+    editor.document.layers.splice(
+        editor.document.layers.indexOf(layer) + 1, 0, n);
+    editor.document.selected = n.id;
+  });
+};
+$('#delete').onclick = () => {
+  const layer = selected();
+  if (!layer) {
+    return;
+  }
+  if (picQuineProject.protects(layer, editor.document.project)) {
+    return toast(
+        'This layer owns unsupported extension data; use an editor that supports it to delete it.');
+  }
+  mutate('Edit layer', () => {
+    editor.document.layers = editor.document.layers.filter((n) => n !== layer);
+    editor.document.selected = editor.document.layers.at(-1)?.id || null;
+  });
+};
+function reorder(delta) {
+  const layer = selected();
+  const i = editor.document.layers.indexOf(layer);
+  const j = i + delta;
+  if (i < 0 || j < 0 || j >= editor.document.layers.length) {
+    return;
+  }
+  mutate('reorder', () => {
+    [editor.document.layers[i], editor.document.layers[j]] = [
+      editor.document.layers[j],
+      editor.document.layers[i],
+    ];
+  });
+}
+$('#raise').onclick = () => reorder(1);
+$('#lower').onclick = () => reorder(-1);
+$('#undo').onclick = undo;
+$('#redo').onclick = redo;
+$('#new').onclick = newDocument;
+$('#open').onclick = $('#welcomeOpen').onclick = () => pick('open');
+$('#importLayer').onclick = () => pick('layer');
+$('#resize').onclick = resize;
+$('#export').onclick = exportImage;
+$('#saveProject').onclick = saveProject;
+$('#loadEditor').onclick = async () => {
+  if (operations.state !== 'idle' || gesture) {
+    return;
+  }
+  const url = await modal(
+      'Load editor URL', 'editor-fields', 'Load', () => $('#editorURL').value);
+  if (!url) {
+    return;
+  }
+  const token = operations.acquire('load-editor');
+  if (!token) {
+    return;
+  }
+  let preview;
+  try {
+    await picQuineRuntime.stage(url);
+    // Embed the snapshot before prompting; opening needs no async work.
+    preview = URL.createObjectURL(new Blob(
+        [picQuineRuntime.render(
+            await picQuineProject.buildData(editor.document), 'loaded')],
+        {type: 'text/html;charset=utf-8'}));
+    status('Editor loaded: ' + picQuineRuntime.pending.url);
+  } catch (error) {
+    toast(error.message || String(error));
+    return;
+  } finally {
+    operations.release(token);
+  }
+  const opened = await modal(
+      'Editor loaded', 'upgrade-fields', 'Open in New Window', () => {
+        // Keep the popup inside the confirmation's user-activation window.
+        const next = window.open(preview, '_blank');
+        if (!next) {
+          toast('Allow popups to open the loaded editor.');
+          return false;
+        }
+        next.opener = null;
+        next.addEventListener(
+            'load', () => URL.revokeObjectURL(preview), {once: true});
+        return true;
+      });
+  if (!opened) {
+    URL.revokeObjectURL(preview);
+  }
+};
+$('#projectOpen').onclick = () => $('#projectInput').click();
+$('#fit').onclick = () => {
+  $('#zoom').value = 'fit';
+  fit();
+};
+$('#zoom').onchange = fit;
+document.querySelectorAll('[data-tool]')
+    .forEach((b) => (b.onclick = () => setTool(b.dataset.tool)));
+$('#help').onclick = () =>
+  modal('Welcome to PicQuine', 'help-fields', 'Got it');
+$('#demo').onclick = async () => {
+  if (operations.busy || proof.active || gesture) {
+    return;
+  }
+  editor.commit();
+  const token = operations.acquire('import');
+  if (!token) {
+    return;
+  }
+  status('Loading SVG sample…');
+  try {
+    const next = await picQuineDemo.create();
+    mutate('Open SVG sample', () => {
+      editor.document = next;
+    }, token);
+    setTool('move');
+    fit();
+    status('SVG sample loaded');
+  } catch (error) {
+    toast(error.message || String(error));
+    status('Sample could not be loaded.');
+  } finally {
+    operations.release(token);
+  }
+};
+document.onkeydown = (e) => {
+  if (operations.busy) {
+    return;
+  }
+  if (proof.active) {
+    if (e.key === 'Escape' && !$('#modal').open) {
+      e.preventDefault();
+      exitProof();
+    }
+    return;
+  }
+  if (e.target.matches('input,textarea,select') || $('#modal').open) {
+    return;
+  }
+  const cmd = e.metaKey || e.ctrlKey;
+  if (cmd && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    e.shiftKey ? redo() : undo();
+    return;
+  }
+  if (cmd && ['o', 's'].includes(e.key.toLowerCase())) {
+    e.preventDefault();
+    e.key.toLowerCase() === 'o' ? pick('open') : saveProject();
+    return;
+  }
+  if (cmd) {
+    return;
+  }
+  const map = {
+    v: 'move',
+    c: 'crop',
+    b: 'brush',
+    e: 'erase',
+    t: 'text',
+    r: 'rect',
+    u: 'ellipse',
+  };
+  if (map[e.key.toLowerCase()]) {
+    setTool(map[e.key.toLowerCase()]);
+  }
+  if (e.key === 'Escape') {
+    setTool('move');
+  }
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    $('#delete').click();
+    e.preventDefault();
+  }
+  if (e.key.startsWith('Arrow') && selected()) {
+    e.preventDefault();
+    mutate('Edit layer', () => {
+      const layer = selected();
+      const n = e.shiftKey ? 10 : 1;
+      layer.x += e.key === 'ArrowRight' ? n : e.key === 'ArrowLeft' ? -n : 0;
+      layer.y += e.key === 'ArrowDown' ? n : e.key === 'ArrowUp' ? -n : 0;
+    });
+  }
+};
+// Proof mode uses explicitly filtered, full document-resolution layer rasters.
+
+function setProofUI(active) {
+  document.body.classList.toggle('proof-mode', active);
+  if (active) {
+    for (const id
+      of ['regionControls',
+        'shapeControls',
+        'applyCrop',
+        'cancelCrop',
+        'brushLabel',
+      ]) {
+      $('#' + id).hidden = true;
+    }
+  }
+  $('#proofControls').hidden = !active;
+  $('#proofCanvas').hidden = !active;
+  if (active) {
+    // Shrinking releases editing buffers while the proof owns the pixels.
+    for (const c of [canvas, overlay]) {
+      if (c.width !== 1) {
+        c.width = 1;
+      }
+      if (c.height !== 1) {
+        c.height = 1;
+      }
+    }
+  }
+  $('#preview').textContent = active ? 'Exit preview' : 'Preview';
+  $('#preview').setAttribute('aria-pressed', String(active));
+  syncOperationUI();
+}
+
+$('#preview').onclick = () => (proof.active ? exitProof() : enterProof());
+$('#proofFilter').onchange = () => {
+  if (proof.active) {
+    renderProof();
+  }
+};
+window.addEventListener('beforeunload', (e) => {
+  if (editor.dirty) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+render();
+fit();
+
+for (const id of ['opacity', 'rotation']) {
+  for (const event of ['onchange', 'onpointerup', 'onkeyup']) {
+    $('#' + id)[event] = () => editor.commit();
+  }
+  $('#' + id).onpointercancel = () => {
+    editor.cancel();
+    render();
+  };
+}
+
+async function openEmbeddedProject() {
+  const element = $('#picquine-project');
+  const json = element?.textContent?.trim();
+  if (!json || json === 'null') {
+    return;
+  }
+  const token = operations.acquire('open-project');
+  if (!token) {
+    return;
+  }
+  status('Opening embedded composition…');
+  try {
+    const project = picQuineJSON.parse(json);
+    element.textContent = 'null';
+    const next = await picQuineStandalone.restore(project);
+    mutate('Open embedded project', () => {
+      editor.document = next;
+    }, token);
+    editor.markSaved();
+    fit();
+    syncOperationUI();
+    status(
+        next.readOnly ?
+            'Read-only: missing ' + next.missing.join(', ') :
+            'Project opened. Save project downloads an updated ZIP containing one HTML file.');
+  } catch (error) {
+    toast(error.message || String(error));
+    status('Embedded project could not be opened.');
+  } finally {
+    operations.release(token);
+  }
+}
+openEmbeddedProject();
+
+</script>
+  </body>
+</html>

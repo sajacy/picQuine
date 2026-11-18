@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#171a19" />
+    <title>PicQuine — local image editor</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="#" aria-label="PicQuine home"
+        ><span class="mark">▧</span> PicQuine</a
+      >
+      <div class="file-actions">
+        <button id="new">New</button
+        ><button id="open">Open image <kbd>⌘ O</kbd></button
+        ><button id="projectOpen">Open project</button
+        ><button id="saveProject">Save project</button
+        ><button id="loadEditor">Load editor URL</button>
+      </div>
+      <span class="spacer"></span
+      ><button id="theme" aria-pressed="false" title="Switch to dark mode">
+        Dark mode</button
+      ><button id="export" class="primary">Export image ↗</button>
+    </header>
+    <div class="documentbar">
+      <input
+        id="docName"
+        aria-label="Project name"
+        title="Project name (used for saved files)"
+        maxlength="200"
+        value="Untitled"
+      /><span class="pill">RGBA</span><span id="docSize">1200 × 800 px</span
+      ><span class="spacer"></span><button id="undo" title="Undo (⌘Z)">↶</button
+      ><button id="redo" title="Redo (⇧⌘Z)">↷</button
+      ><span class="divider"></span><button id="resize">Resize</button
+      ><button id="preview" aria-pressed="false">Preview</button
+      ><label id="proofControls" hidden
+        ><span>Proof filter</span>
+        <select id="proofFilter" aria-label="Proof resampling filter">
+          <option value="bicubic">Bicubic</option>
+          <option value="lanczos">Lanczos 3</option>
+        </select></label
+      ><button id="fit">Fit canvas</button
+      ><select id="zoom" aria-label="Zoom">
+        <option value="fit">Fit</option>
+        <option value="0.25">25%</option>
+        <option value="0.5">50%</option>
+        <option value="1">100%</option>
+        <option value="2">200%</option>
+      </select>
+    </div>
+    <main>
+      <nav class="tools" aria-label="Editing tools">
+        <button data-tool="move" class="active" title="Move layer (V)">
+          ↖<small>V</small></button
+        ><button data-tool="crop" title="Crop (C)">⌗<small>C</small></button
+        ><button data-tool="brush" title="Brush (B)">╱<small>B</small></button
+        ><button data-tool="erase" title="Eraser (E)">▱<small>E</small></button
+        ><button data-tool="text" title="Add text (T)">T<small>T</small></button
+        ><button data-tool="rect" title="Rectangle (R)">
+          □<small>R</small></button
+        ><button data-tool="ellipse" title="Ellipse (U)">
+          ○<small>U</small>
+        </button>
+        <div class="tool-rule"></div>
+        <input
+          id="color"
+          type="color"
+          value="#287c65"
+          title="Paint color"
+        /><button id="help" title="Help">?</button>
+      </nav>
+      <section class="workspace">
+        <div class="contextbar">
+          <b id="toolLabel">Move</b
+          ><span id="toolHint">Drag to position the selected layer</span
+          ><span class="spacer"></span>
+          <div id="regionControls" hidden>
+            <label
+              >X <input id="regionX" type="number" step="1" value="0" /></label
+            ><label
+              >Y <input id="regionY" type="number" step="1" value="0" /></label
+            ><label
+              >W
+              <input
+                id="regionW"
+                type="number"
+                min="1"
+                step="1"
+                value="100" /></label
+            ><label
+              >H
+              <input
+                id="regionH"
+                type="number"
+                min="1"
+                step="1"
+                value="100" /></label
+            ><button id="addRectangle" class="primary" hidden>
+              Add rectangle
+            </button>
+          </div>
+          <div id="shapeControls" hidden>
+            <label
+              >Mode<select id="shapeMode">
+                <option value="stroke">Stroke only</option>
+                <option value="both" selected>Stroke + fill</option>
+                <option value="fill">Fill only</option>
+              </select></label
+            ><label
+              >Fill<input
+                id="shapeFill"
+                type="color"
+                value="#287c65"
+                aria-label="Shape fill color" /></label
+            ><label
+              >Stroke<input
+                id="shapeStroke"
+                type="color"
+                value="#ff0000"
+                aria-label="Shape stroke color" /></label
+            ><label
+              >Width<input
+                id="shapeStrokeWidth"
+                type="number"
+                min="1"
+                max="4096"
+                step="1"
+                value="4"
+                aria-label="Stroke width in pixels"
+            /></label>
+          </div>
+          <label id="brushLabel" hidden
+            >Size
+            <input id="brushSize" type="number" min="1" max="500" value="24" />
+            px</label
+          ><button id="applyCrop" hidden class="primary">Apply crop</button
+          ><label id="cropLayerLabel" hidden><input id="cropToLayer" type="checkbox" />Crop to new layer</label
+          ><button id="cancelCrop" hidden>Cancel</button>
+        </div>
+        <div id="viewport">
+          <div id="stage">
+            <canvas id="canvas" width="1200" height="800"></canvas
+            ><canvas id="proofCanvas" hidden></canvas>
+            <div id="proofProgress" role="status" hidden>Rendering proof…</div>
+            <canvas id="overlay" width="1200" height="800"></canvas>
+            <div id="welcome">
+              <h1 id="welcomeTitle">Image editor</h1>
+              <button id="welcomeOpen" class="primary">Open image</button>
+              <p class="formats">JPG · PNG · HEIC · BMP · SVG · WebP · AVIF</p>
+              <button id="demo" class="text-button">Open sample</button>
+            </div>
+          </div>
+        </div>
+        <footer>
+          <span id="status" role="status">Ready</span
+          ><span class="spacer"></span><span id="layerCount">0 layers</span
+          ><span id="coordinates" aria-label="Canvas coordinates">X — Y —</span
+          ><span id="regionSize" aria-label="Selection dimensions"></span>
+        </footer>
+      </section>
+      <aside>
+        <div class="panel-head">
+          <h2>Layers</h2>
+          <button id="addLayer" title="Add transparent layer">＋</button
+          ><button id="importLayer" title="Import image as layer">↥</button>
+        </div>
+        <div id="layers"></div>
+        <div class="layer-actions">
+          <button id="duplicate" title="Duplicate layer">⧉ Duplicate</button
+          ><button id="raise" title="Move layer up">↑</button
+          ><button id="lower" title="Move layer down">↓</button
+          ><button id="delete" title="Delete layer">⌫</button>
+        </div>
+        <section class="properties">
+          <h2>Layer properties</h2>
+          <button id="editLayer" hidden>Edit</button>
+          <div id="properties">
+            <label
+              >Name<input
+                id="layerName"
+                type="text"
+                placeholder="Select a layer" /></label
+            ><label
+              >Opacity <output id="opacityValue">100%</output
+              ><input id="opacity" type="range" min="0" max="100" value="100"
+            /></label>
+            <div class="fields">
+              <label>X<input id="posX" type="number" value="0" /></label
+              ><label>Y<input id="posY" type="number" value="0" /></label>
+            </div>
+            <div class="fields">
+              <label
+                >Width<input
+                  id="layerWidth"
+                  type="number"
+                  min="1"
+                  value="1200" /></label
+              ><label
+                >Height<input
+                  id="layerHeight"
+                  type="number"
+                  min="1"
+                  value="800"
+              /></label>
+            </div>
+            <div class="fields">
+              <label>Size units<select id="layerSizeUnit"><option value="pixels">Pixels</option><option value="percent">Percent of source</option></select></label>
+              <label><input id="layerRatio" type="checkbox" />Lock aspect ratio</label>
+            </div>
+            <label
+              >Rotation <output id="rotationValue">0°</output>
+              <div class="rotation-controls">
+                <button id="rotate90" title="Rotate layer 90 degrees clockwise">
+                  ↻ 90°</button
+                ><input
+                  id="rotation"
+                  type="range"
+                  min="1"
+                  max="360"
+                  step="1"
+                  value="360"
+                  aria-label="Layer rotation in degrees"
+                /></div></label
+            ><label
+              >Blend mode<select id="blend">
+                <option value="source-over">Normal</option>
+                <option value="multiply">Multiply</option>
+                <option value="screen">Screen</option>
+                <option value="overlay">Overlay</option>
+                <option value="darken">Darken</option>
+                <option value="lighten">Lighten</option>
+              </select></label
+            >
+          </div>
+        </section>
+      </aside>
+    </main>
+    <input
+      id="fileInput"
+      type="file"
+      accept=".jpg,.jpeg,.png,.heic,.heif,.bmp,.svg,.webp,.avif"
+      multiple
+      hidden
+    /><input
+      id="projectInput"
+      type="file"
+      accept=".html,.zip,text/html,application/zip"
+      hidden
+    />
+    <template id="editor-fields"><label>Editor bundle URL<input id="editorURL" type="url" required /></label></template>
+    <template id="save-fields"><label>Editor<select id="saveEditor"><option value="current">Current editor</option></select></label></template>
+    <template id="upgrade-fields"><p>Open the loaded editor in a new window with the current project. Save there to keep the new editor and project.</p></template>
+    <template id="text-fields"
+      ><label
+        >Text<textarea id="textContent" rows="4" maxlength="2000">Something wonderful</textarea></label
+      ><label
+        >Font<select id="textFont">
+          <option value="Georgia">Georgia</option>
+          <option value="Arial">Arial</option>
+          <option value="Helvetica">Helvetica</option>
+          <option value="Verdana">Verdana</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Courier New">Courier New</option>
+          <option value="system-ui">System font</option>
+          <option value="serif">Serif</option>
+          <option value="sans-serif">Sans serif</option>
+          <option value="monospace">Monospace</option>
+        </select></label
+      ><label
+        >Font size (px)<input
+          id="textSize"
+          type="number"
+          value="72"
+          min="1"
+          max="1000"
+          required /></label
+      ><label
+        >Text color<input id="textColor" type="color" value="#287c65" /></label
+    ></template>
+    <template id="svg-fields"><label>SVG markup<textarea id="svgContent" rows="14" spellcheck="false"></textarea></label></template>
+    <template id="new-fields"
+      ><label
+        >Width (px)<input
+          id="newW"
+          type="number"
+          value="1200"
+          min="1"
+          max="16384"
+          required /></label
+      ><label
+        >Height (px)<input
+          id="newH"
+          type="number"
+          value="800"
+          min="1"
+          max="16384"
+          required
+      /></label>
+      <p>
+        Start with a transparent canvas. Your current work remains available in
+        Undo.
+      </p></template
+    >
+    <template id="resize-fields"
+      ><label
+        >Units<select id="resizeUnit">
+          <option value="pixels">Pixels</option>
+          <option value="percent">Percentage</option>
+        </select></label
+      ><label id="resizeWLabel"
+        >Width<input
+          id="resizeW"
+          type="number"
+          value="1200"
+          min="0.01"
+          step="any"
+          required /></label
+      ><label
+        >Height<input
+          id="resizeH"
+          type="number"
+          value="800"
+          min="0.01"
+          step="any"
+          required /></label
+      ><label
+        ><input id="ratio" type="checkbox" checked /> Lock aspect ratio</label
+      >
+      <p>
+        Scales all layers with the canvas. Source pixels are retained.
+      </p></template
+    >
+    <template id="export-fields"
+      ><label
+        >Format<select id="exportFormat">
+          <option value="image/png">PNG — with transparency</option>
+          <option value="image/jpeg">JPEG — flattened background</option>
+          <option value="image/webp">WebP — with transparency</option>
+        </select></label
+      ><label>Resampling<select id="exportResampling"><option value="none">None</option><option value="bicubic">Bicubic (graphics)</option><option value="lanczos">Lanczos (photos)</option></select></label
+      ><label id="qualityLabel" hidden
+        >Quality<input
+          id="exportQuality"
+          type="range"
+          min="10"
+          max="100"
+          value="92" /></label
+      ><label id="bgLabel" hidden
+        >JPEG background <input id="exportBg" type="color" value="#ffffff"
+      /></label>
+      <p>Exports visible layers at full canvas resolution.</p></template
+    >
+    <template id="help-fields"
+      ><p>
+        Open an image to start, or drop one onto the canvas. Import more images
+        with the arrow in the Layers panel.
+      </p>
+      <p>
+        V Move · C Crop · B Brush · E Eraser · T Text · R Rectangle · U
+        Ellipse<br />⌘/Ctrl Z Undo · ⇧⌘/Ctrl Z Redo<br />⌘/Ctrl O Open · ⌘/Ctrl
+        S Save project
+      </p>
+      <p>
+        Preview creates a read-only, full-resolution Bicubic or Lanczos 3 proof.
+        Use 100% zoom to inspect pixels. Export in preview saves that filtered
+        result. Exit preview or Escape returns to editing.
+      </p>
+      <p>
+        Paint and erase on the selected layer. PNG and WebP preserve alpha. Save
+        a .zip project to keep layers editable and retain original input files,
+        including SVG. SVG uses a sanitized raster display cache; external
+        references are removed from that display only. HEIC is decoded locally.
+      </p></template
+    >
+    <dialog id="modal">
+      <form method="dialog">
+        <div class="dialog-top">
+          <h2 id="modalTitle"></h2>
+          <button formnovalidate value="cancel" aria-label="Close">×</button>
+        </div>
+        <div id="modalBody"></div>
+        <div class="dialog-actions">
+          <button formnovalidate value="cancel">Cancel</button
+          ><button id="modalOK" value="ok" class="primary">Apply</button>
+        </div>
+      </form>
+    </dialog>
+    <div id="toast" role="alert"></div>
+    <script src="config.js"></script>
+    <script src="json.js"></script>
+    <script src="dom.js"></script>
+    <script src="archive.js"></script>
+    <script src="resample.js"></script>
+    <script src="geometry.js"></script>
+    <script src="document.js"></script>
+    <script src="images.js"></script>
+    <script src="shapes.js"></script>
+    <script src="renderer.js"></script>
+    <script src="project.js"></script>
+    <script src="history.js"></script>
+    <script src="operations.js"></script>
+    <script src="assets.js"></script>
+    <script src="files.js"></script>
+    <script src="proof.js"></script>
+    <script src="runtime.js"></script>
+    <script src="standalone.js"></script>
+    <script type="application/json" id="picquine-project">null</script>
+    <script src="demo.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

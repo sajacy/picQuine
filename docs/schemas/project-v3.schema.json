@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PicQuine project version 3",
+  "description": "Cross-reference, capability and resource checks are specified in PROJECT-V3.md.",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "composition",
+    "assets"
+  ],
+  "properties": {
+    "format": {
+      "const": "picquine-project"
+    },
+    "version": {
+      "const": 3
+    },
+    "composition": {
+      "type": "object",
+      "required": [
+        "name",
+        "w",
+        "h",
+        "selected",
+        "layers"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "w": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "h": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "selected": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/assetID"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/layer"
+          }
+        },
+        "extensions": false
+      },
+      "additionalProperties": true
+    },
+    "assets": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/asset"
+      }
+    },
+    "extensions": {
+      "$ref": "#/$defs/extensions"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "assetID": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+    },
+    "extension": {
+      "type": "object",
+      "required": [
+        "version",
+        "required",
+        "assetRefs",
+        "data"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "assetRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assetID"
+          },
+          "uniqueItems": true
+        },
+        "data": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "extensions": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9-]*)+$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/extension"
+      }
+    },
+    "textRun": {
+      "type": "object",
+      "required": [
+        "content",
+        "fontFamily",
+        "fontSize",
+        "color",
+        "x",
+        "y"
+      ],
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "fontFamily": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fontSize": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "extensions": false
+      },
+      "additionalProperties": true
+    },
+    "layer": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "content",
+        "original",
+        "x",
+        "y",
+        "w",
+        "h",
+        "rotation",
+        "opacity",
+        "visible",
+        "blend"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/assetID"
+        },
+        "name": {
+          "type": "string"
+        },
+        "content": {
+          "$ref": "#/$defs/assetID"
+        },
+        "original": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/assetID"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "h": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "rotation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 359
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "blend": {
+          "enum": [
+            "source-over",
+            "multiply",
+            "screen",
+            "overlay",
+            "darken",
+            "lighten"
+          ]
+        },
+        "text": {
+          "type": "object",
+          "required": [
+            "content",
+            "runs"
+          ],
+          "properties": {
+            "content": {
+              "type": "string"
+            },
+            "runs": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/textRun"
+              }
+            },
+            "extensions": false
+          },
+          "additionalProperties": true
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      },
+      "additionalProperties": true
+    },
+    "asset": {
+      "type": "object",
+      "required": [
+        "name",
+        "type",
+        "base64"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+$"
+        },
+        "base64": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

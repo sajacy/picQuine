@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>PicQuine browser smoke checks</title>
+  <style>
+    body {
+      font: 14px system-ui;
+      margin: 32px;
+      color: #24312b;
+      background: #f4f6f4;
+    }
+    pre {
+      white-space: pre-wrap;
+    }
+    canvas {
+      border: 1px solid #ccc;
+    }
+  </style>
+  <h1>Browser smoke checks</h1>
+  <p>
+    Runs locally with real Canvas, SVG decoding, ZIP compression and a Blob
+    worker. Does not access user files.
+  </p>
+  <pre id="results">Running…</pre>
+  <script src="browser-smoke.js"></script>
+</html>

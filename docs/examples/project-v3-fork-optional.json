@@ -1,0 +1,76 @@
+{
+  "format": "picquine-project",
+  "version": 3,
+  "composition": {
+    "name": "HEIC retained as optional original",
+    "w": 16,
+    "h": 16,
+    "selected": "layer-1",
+    "layers": [
+      {
+        "id": "layer-1",
+        "name": "Orange photo",
+        "content": "asset-png-1",
+        "original": "asset-heic-1",
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16,
+        "rotation": 0,
+        "opacity": 1,
+        "visible": true,
+        "blend": "source-over",
+        "extensions": {
+          "io.github.example.print-editor": {
+            "version": 1,
+            "required": false,
+            "assetRefs": [],
+            "data": {
+              "excludeFromPrint": false
+            }
+          }
+        }
+      }
+    ]
+  },
+  "assets": {
+    "asset-heic-1": {
+      "name": "orange.heic",
+      "type": "image/heic",
+      "base64": "AAAAJGZ0eXBoZWljAAAAAG1pZjFNaVBybWlhZk1pSEJoZWljAAABvG1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAHBpY3QAAAAAAAAAAAAAAAAAAAAAJGRpbmYAAAAcZHJlZgAAAAAAAAABAAAADHVybCAAAAABAAAADnBpdG0AAAAAAAEAAAA4aWluZgAAAAAAAgAAABVpbmZlAgAAAAABAABodmMxAAAAABVpbmZlAgAAAQACAABFeGlmAAAAABppcmVmAAAAAAAAAA5jZHNjAAIAAQABAAAA32lwcnAAAAC/aXBjbwAAABNjb2xybmNseAACAAIABoAAAAB3aHZjQwEBYAAAALAAAAAAAB7wAPz9+PgAAA8DoAABABdAAQwB//8BYAAAAwCwAAADAAADAB4sCaEAAQAhQgEBAWAAAAMAsAAAAwAAAwAeoIhFnLkkSklxNwICBqQCogABABFEAcBhEkwE6RERJEkSRJEqQAAAABRpc3BlAAAAAAAAABAAAAAQAAAACWlyb3QAAAAAEHBpeGkAAAAAAwgICAAAABhpcG1hAAAAAAAAAAEAAQWBggOEBQAAACxpbG9jAAAAAEQAAAIAAQAAAAEAAAI8AAAAFAACAAAAAQAAAfAAAABMAAAAAW1kYXQAAAAAAAAAcAAAAAZFeGlmAABNTQAqAAAACAADARoABQAAAAEAAAAyARsABQAAAAEAAAA6ASgAAwAAAAEAAgAAAAAAAAAAAEgAAAABAAAASAAAAAEAAAAQJgGtwPFMkMpY//RHJhvFuA==",
+      "extensions": {
+        "org.picquine.heic": {
+          "version": 1,
+          "required": false,
+          "assetRefs": [],
+          "data": {
+            "imageIndex": 0
+          }
+        }
+      }
+    },
+    "asset-png-1": {
+      "name": "orange-edit.png",
+      "type": "image/png",
+      "base64": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGUlEQVR4nGP4X8/wnxLMMGrAqAGjBgwXAwB3Yn0fQsiMIQAAAABJRU5ErkJggg=="
+    },
+    "asset-profile-1": {
+      "name": "print-preset.json",
+      "type": "application/json",
+      "base64": "eyJpbnRlbnQiOiJyZWxhdGl2ZS1jb2xvcmltZXRyaWMifQ=="
+    }
+  },
+  "extensions": {
+    "io.github.example.print-editor": {
+      "version": 1,
+      "required": false,
+      "assetRefs": [
+        "asset-profile-1"
+      ],
+      "data": {
+        "bleedMillimeters": 3,
+        "profile": "asset-profile-1"
+      }
+    }
+  }
+}

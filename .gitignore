@@ -1,0 +1,10 @@
+.DS_Store
+__pycache__/
+*.pyc
+/dist/*
+!/dist/Base-Editor.html
+!/dist/Editor-With-HEIC.html
+!/dist/base-editor.bundle.json
+!/dist/editor-with-heic.bundle.json
+/node_modules/
+/tests/artifacts/

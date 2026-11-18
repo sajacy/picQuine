@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "org.picquine.heic extension version 1 (asset scope)",
+  "type": "object",
+  "required": [
+    "version",
+    "required",
+    "assetRefs",
+    "data"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "required": {
+      "type": "boolean"
+    },
+    "assetRefs": {
+      "type": "array",
+      "maxItems": 0
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "imageIndex"
+      ],
+      "properties": {
+        "imageIndex": {
+          "const": 0
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
