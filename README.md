@@ -4,6 +4,8 @@
 - Supports JPG, PNG, BMP, SVG, WebP, AVIF and optional HEIC/HEIF.
 - Crop, resize, rotate, paint, add text/shapes, and preview with bicubic or Lanczos resampling.
 
+![PicQuine editing the four-layer SVG demo](docs/images/demo.png)
+
 ## Run
 
 - Open [`dist/Base-Editor.html`](dist/Base-Editor.html) in Chrome.
